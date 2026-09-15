@@ -1,0 +1,274 @@
+{
+  "schemaVersion": 1,
+  "season": 2026,
+  "updatedAt": "2026-09-15T21:49:04Z",
+  "notes": "Pinned from official latest stable releases. Do not invent versions. Refresh with: go run ./cmd/refresh-manifest",
+  "tools": [
+    {
+      "id": "git",
+      "name": "Git",
+      "summary": "Lets you clone and save robot code.",
+      "why": "Every programming laptop needs Git before you pull the team repo.",
+      "group": "required",
+      "kind": "download",
+      "docsUrl": "https://git-scm.com/install/windows",
+      "source": {
+        "type": "github_release",
+        "owner": "git-for-windows",
+        "repo": "git",
+        "asset": "Git-*-64-bit.exe"
+      },
+      "pinned": {
+        "version": "v2.55.0.windows.5",
+        "url": "https://github.com/git-for-windows/git/releases/download/v2.55.0.windows.5/Git-2.55.0.5-64-bit.exe",
+        "sha256": "d065a4e23c3d9a6b5073d609b5be0830227ec3ca053c083ba385061ddfaf94c6",
+        "size": 65343712,
+        "assetName": "Git-2.55.0.5-64-bit.exe",
+        "releaseUrl": "https://github.com/git-for-windows/git/releases/tag/v2.55.0.windows.5",
+        "provenAt": "2026-09-15T21:49:04Z"
+      },
+      "install": {
+        "type": "exe",
+        "args": ["/VERYSILENT", "/NORESTART", "/SP-", "/CURRENTUSER"]
+      },
+      "verify": {
+        "commands": [{ "name": "git", "args": ["--version"] }],
+        "paths": [
+          "%ProgramFiles%\\Git\\cmd\\git.exe",
+          "%ProgramFiles(x86)%\\Git\\cmd\\git.exe",
+          "%LOCALAPPDATA%\\Programs\\Git\\cmd\\git.exe"
+        ]
+      }
+    },
+    {
+      "id": "wpilib",
+      "name": "WPILib",
+      "summary": "VS Code, JDK, and the FRC programming tools.",
+      "why": "This is the official Java/C++ (and tools-only) programming install. About 2.4 GB.",
+      "group": "required",
+      "kind": "download",
+      "docsUrl": "https://docs.wpilib.org/en/stable/docs/zero-to-robot/step-2/wpilib-setup.html",
+      "source": {
+        "type": "wpilib_github_notes",
+        "owner": "wpilibsuite",
+        "repo": "allwpilib"
+      },
+      "pinned": {
+        "version": "v2026.2.1",
+        "url": "https://packages.wpilib.workers.dev/installer/v2026.2.1/Win64/WPILib_Windows-2026.2.1.iso",
+        "sha256": "6dd86b714c41127c9ef7683b398dc21423cba7146e6868a97fefbd65a14429cb",
+        "size": 2514407424,
+        "etag": "\"b301f4fde2abee4b2b423c56666aa85a-480\"",
+        "assetName": "WPILib_Windows-2026.2.1.iso",
+        "releaseUrl": "https://github.com/wpilibsuite/allwpilib/releases/tag/v2026.2.1",
+        "provenAt": "2026-09-15T21:49:04Z"
+      },
+      "install": {
+        "type": "wpilib_iso"
+      },
+      "verify": {
+        "paths": [
+          "%PUBLIC%\\wpilib\\2026",
+          "%USERPROFILE%\\wpilib\\2026",
+          "C:\\Users\\Public\\wpilib\\2026"
+        ]
+      }
+    },
+    {
+      "id": "ni-game-tools",
+      "name": "FRC Driver Station / NI Game Tools",
+      "summary": "Driver Station and roboRIO imaging — Windows only.",
+      "why": "NI does not publish a stable public direct-download URL (an NI account is required). We open the official page instead of inventing a version.",
+      "group": "required",
+      "kind": "vendor_page",
+      "docsUrl": "https://docs.wpilib.org/en/stable/docs/zero-to-robot/step-2/frc-game-tools.html",
+      "vendorUrl": "https://www.ni.com/en/support/downloads/drivers/download.frc-game-tools.html",
+      "unprovenReason": "NI Game Tools is behind an NI account and has no proven unauthenticated latest URL.",
+      "verify": {
+        "paths": [
+          "%ProgramFiles(x86)%\\FRC Driver Station\\Driver Station.exe",
+          "%ProgramFiles(x86)%\\FRC Driver Station\\FRC Driver Station.exe",
+          "%ProgramFiles%\\FRC Driver Station\\Driver Station.exe"
+        ]
+      }
+    },
+    {
+      "id": "pathplanner",
+      "name": "PathPlanner",
+      "summary": "Draw autonomous paths.",
+      "why": "Official Windows setup from the PathPlanner GitHub releases.",
+      "group": "recommended",
+      "kind": "download",
+      "docsUrl": "https://pathplanner.dev",
+      "source": {
+        "type": "github_release",
+        "owner": "mjansen4857",
+        "repo": "pathplanner",
+        "asset": "PathPlanner-Windows-*-setup.exe"
+      },
+      "pinned": {
+        "version": "v2026.1.2",
+        "url": "https://github.com/mjansen4857/pathplanner/releases/download/v2026.1.2/PathPlanner-Windows-v2026.1.2-setup.exe",
+        "sha256": "4887de03edc6e71fdb54d296bfad23f4bd03343bac49d597f8b759c10401fef3",
+        "size": 12432756,
+        "assetName": "PathPlanner-Windows-v2026.1.2-setup.exe",
+        "releaseUrl": "https://github.com/mjansen4857/pathplanner/releases/tag/v2026.1.2",
+        "provenAt": "2026-09-15T21:49:04Z"
+      },
+      "install": {
+        "type": "exe"
+      },
+      "verify": {
+        "paths": [
+          "%LOCALAPPDATA%\\Programs\\PathPlanner\\PathPlanner.exe",
+          "%LOCALAPPDATA%\\PathPlanner\\PathPlanner.exe"
+        ]
+      }
+    },
+    {
+      "id": "advantagescope",
+      "name": "AdvantageScope",
+      "summary": "Log viewer and field visualization.",
+      "why": "WPILib ships a copy; this installs the latest official Windows build from Mechanical Advantage.",
+      "group": "recommended",
+      "kind": "download",
+      "docsUrl": "https://docs.advantagescope.org/overview/installation",
+      "source": {
+        "type": "github_release",
+        "owner": "Mechanical-Advantage",
+        "repo": "AdvantageScope",
+        "asset": "advantagescope-win-x64-*.exe"
+      },
+      "pinned": {
+        "version": "v26.0.2",
+        "url": "https://github.com/Mechanical-Advantage/AdvantageScope/releases/download/v26.0.2/advantagescope-win-x64-v26.0.2.exe",
+        "sha256": "de1731620c1c9e2586ebcb20372fdec39a1f98086b4aff5c3a39bda004d1468a",
+        "size": 163196543,
+        "assetName": "advantagescope-win-x64-v26.0.2.exe",
+        "releaseUrl": "https://github.com/Mechanical-Advantage/AdvantageScope/releases/tag/v26.0.2",
+        "provenAt": "2026-09-15T21:49:04Z"
+      },
+      "install": {
+        "type": "exe"
+      },
+      "verify": {
+        "paths": [
+          "%LOCALAPPDATA%\\Programs\\AdvantageScope\\AdvantageScope.exe",
+          "%LOCALAPPDATA%\\AdvantageScope\\AdvantageScope.exe",
+          "%PUBLIC%\\wpilib\\2026\\tools\\AdvantageScope.bat"
+        ]
+      }
+    },
+    {
+      "id": "choreo",
+      "name": "Choreo",
+      "summary": "Time-optimal swerve path planner.",
+      "why": "Official Windows setup from SleipnirGroup/Choreo.",
+      "group": "recommended",
+      "kind": "download",
+      "docsUrl": "https://choreo.autos/installation/",
+      "source": {
+        "type": "github_release",
+        "owner": "SleipnirGroup",
+        "repo": "Choreo",
+        "asset": "Choreo-*-Windows-x86_64-setup.exe"
+      },
+      "pinned": {
+        "version": "v2026.0.3",
+        "url": "https://github.com/SleipnirGroup/Choreo/releases/download/v2026.0.3/Choreo-v2026.0.3-Windows-x86_64-setup.exe",
+        "sha256": "f4fab6e146623c0780f4157cd8008b6b43111704381a12dba527e3b0bea7fdaa",
+        "size": 6152922,
+        "assetName": "Choreo-v2026.0.3-Windows-x86_64-setup.exe",
+        "releaseUrl": "https://github.com/SleipnirGroup/Choreo/releases/tag/v2026.0.3",
+        "provenAt": "2026-09-15T21:49:04Z"
+      },
+      "install": {
+        "type": "exe"
+      },
+      "verify": {
+        "paths": [
+          "%LOCALAPPDATA%\\Programs\\Choreo\\Choreo.exe",
+          "%LOCALAPPDATA%\\Choreo\\Choreo.exe"
+        ]
+      }
+    },
+    {
+      "id": "elastic",
+      "name": "Elastic",
+      "summary": "Driver dashboard used behind the glass.",
+      "why": "WPILib also bundles Elastic; this installs the latest official Windows setup.",
+      "group": "optional",
+      "kind": "download",
+      "docsUrl": "https://frc-elastic.gitbook.io/docs/getting-started/installation",
+      "source": {
+        "type": "github_release",
+        "owner": "Gold872",
+        "repo": "elastic_dashboard",
+        "asset": "elastic-setup-windows.exe"
+      },
+      "pinned": {
+        "version": "v2026.1.2",
+        "url": "https://github.com/Gold872/elastic_dashboard/releases/download/v2026.1.2/elastic-setup-windows.exe",
+        "sha256": "78cded62a4202bfc251c7d82bcca5d747bf2e78731595a523dbd6ea329a88567",
+        "size": 32828055,
+        "assetName": "elastic-setup-windows.exe",
+        "releaseUrl": "https://github.com/Gold872/elastic_dashboard/releases/tag/v2026.1.2",
+        "provenAt": "2026-09-15T21:49:04Z"
+      },
+      "install": {
+        "type": "exe"
+      },
+      "verify": {
+        "paths": [
+          "%LOCALAPPDATA%\\Programs\\Elastic\\Elastic.exe",
+          "%LOCALAPPDATA%\\Programs\\elastic_dashboard\\elastic_dashboard.exe",
+          "%PUBLIC%\\wpilib\\2026\\tools\\Elastic.bat"
+        ]
+      }
+    },
+    {
+      "id": "rev-hardware-client",
+      "name": "REV Hardware Client",
+      "summary": "Update SPARK MAX/Flex and other REV hardware.",
+      "why": "REV hosts the installer on their site. There is no proven GitHub latest asset, so this is a vendor step.",
+      "group": "optional",
+      "kind": "vendor_page",
+      "docsUrl": "https://docs.revrobotics.com/rev-hardware-client-2",
+      "vendorUrl": "https://docs.revrobotics.com/rev-hardware-client-2",
+      "unprovenReason": "No public GitHub release asset for the latest REV Hardware Client installer."
+    },
+    {
+      "id": "phoenix-tuner-x",
+      "name": "Phoenix Tuner X",
+      "summary": "CTRE motor controllers, CANivore, Pigeon.",
+      "why": "Ships from the Microsoft Store / CTRE. No proven standalone latest EXE URL.",
+      "group": "optional",
+      "kind": "vendor_page",
+      "docsUrl": "https://pro.docs.ctr-electronics.com/en/stable/docs/tuner/index.html",
+      "vendorUrl": "https://apps.microsoft.com/detail/9nvv38q8rqc1",
+      "unprovenReason": "Phoenix Tuner X is distributed via app stores and the CTRE offline installer, not a pinned public latest URL."
+    },
+    {
+      "id": "labview",
+      "name": "LabVIEW for FRC",
+      "summary": "Only if your team programs in LabVIEW.",
+      "why": "Huge NI download behind an account. Skip this on a Java/C++/Python laptop.",
+      "group": "optional",
+      "kind": "vendor_page",
+      "docsUrl": "https://docs.wpilib.org/en/stable/docs/zero-to-robot/step-2/labview-setup.html",
+      "vendorUrl": "https://www.ni.com/en/support/downloads/software-products/download.labview-for-frc.html",
+      "unprovenReason": "LabVIEW for FRC requires an NI account and has no proven unauthenticated latest URL."
+    },
+    {
+      "id": "radio-om5p",
+      "name": "FRC Radio Configuration (OM5P only)",
+      "summary": "Old OpenMesh radios only — skip on a 2026 VH-109 laptop.",
+      "why": "2026 robot radios (VH-109) are configured in a browser at http://radio.local/. The OM5P utility is a vendor page because the published file is a 2025 build, not a proven 2026 latest.",
+      "group": "optional",
+      "kind": "vendor_page",
+      "docsUrl": "https://docs.wpilib.org/en/stable/docs/zero-to-robot/step-3/openmesh.html",
+      "vendorUrl": "https://docs.wpilib.org/en/stable/docs/zero-to-robot/step-3/openmesh.html",
+      "unprovenReason": "Current WPILib docs still point at the 2025 OM5P utility. 2026 VH-109 radios do not use that installer."
+    }
+  ]
+}

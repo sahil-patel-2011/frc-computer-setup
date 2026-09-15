@@ -1,0 +1,9 @@
+/bin/
+/dist/
+/cache/
+*.exe
+*.test
+*.out
+.DS_Store
+Thumbs.db
+.env

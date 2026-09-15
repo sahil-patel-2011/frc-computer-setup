@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FRC Computer Setup</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="top">
+      <p class="kicker">New FRC laptop</p>
+      <h1>Computer setup</h1>
+      <p class="lead" id="lead">One walkthrough. Official downloads only. You should not hunt fifty vendor pages.</p>
+    </header>
+
+    <section id="screen-welcome" class="card">
+      <ol class="steps-preview">
+        <li>Pick the tools</li>
+        <li>Each one: download → install → we check it</li>
+        <li>If a vendor has no public latest URL, we open their official page</li>
+      </ol>
+      <p class="hint">Windows only. Driver Station is Windows-only. Stay on this window until it says done.</p>
+      <button class="primary" id="btn-begin" type="button">Start</button>
+    </section>
+
+    <section id="screen-pick" class="card hidden">
+      <h2>What to install</h2>
+      <p class="hint">Required and recommended are on. Uncheck anything you don’t need.</p>
+      <form id="tool-list"></form>
+      <div class="row">
+        <button class="primary" id="btn-go" type="button">Download and install</button>
+      </div>
+    </section>
+
+    <section id="screen-run" class="card hidden">
+      <p class="progress-label" id="progress-label">Step 1 of 1</p>
+      <div class="bar"><div class="bar-fill" id="bar-fill"></div></div>
+      <p class="phase" id="phase">Starting</p>
+      <h2 id="tool-name">…</h2>
+      <p class="message" id="message">Hang on.</p>
+      <p class="bytes" id="bytes"></p>
+      <div class="row" id="ack-row">
+        <button class="primary hidden" id="btn-continue" type="button">I finished this step</button>
+        <button class="ghost hidden" id="btn-skip" type="button">Skip</button>
+        <a class="ghost hidden" id="btn-open" href="#" target="_blank" rel="noreferrer">Open vendor page</a>
+      </div>
+    </section>
+
+    <section id="screen-done" class="card hidden">
+      <h2>That’s the walkthrough</h2>
+      <ul id="summary"></ul>
+      <p class="hint">Launch <strong>WPILib VS Code 2026</strong> for robot code — not a random VS Code from the Start menu.</p>
+      <p class="hint">Driver Station is in NI Game Tools. If that step was a vendor page, keep the NI tab until it finishes.</p>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>
