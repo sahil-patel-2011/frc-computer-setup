@@ -103,13 +103,22 @@ func TestSilentWindowsArgs(t *testing.T) {
 		}
 	}
 	wpilib, _ := c.Tool("wpilib")
-	if inst := wpilib.InstallFor("windows", "amd64"); inst == nil || inst.Type != "wpilib_iso" {
+	if inst := wpilib.InstallFor("windows", "amd64"); inst == nil || inst.Type != "wpilib_iso" || !hasSilent(inst.Args) {
 		t.Fatalf("wpilib windows %+v", wpilib.InstallFor("windows", "amd64"))
 	}
-	if inst := wpilib.InstallFor("darwin", "arm64"); inst == nil || inst.Type != "wpilib_dmg" {
+	if inst := wpilib.InstallFor("darwin", "arm64"); inst == nil || inst.Type != "wpilib_dmg" || !hasSilent(inst.Args) {
 		t.Fatalf("wpilib mac %+v", inst)
 	}
-	if inst := wpilib.InstallFor("linux", "amd64"); inst == nil || inst.Type != "wpilib_tarball" {
+	if inst := wpilib.InstallFor("linux", "amd64"); inst == nil || inst.Type != "wpilib_tarball" || !hasSilent(inst.Args) {
 		t.Fatalf("wpilib linux %+v", inst)
 	}
+}
+
+func hasSilent(args []string) bool {
+	for _, a := range args {
+		if a == "--force" || a == "/VERYSILENT" || a == "/S" {
+			return true
+		}
+	}
+	return false
 }

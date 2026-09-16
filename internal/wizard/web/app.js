@@ -1,5 +1,4 @@
 const screens = {
-  welcome: document.getElementById("screen-welcome"),
   pick: document.getElementById("screen-pick"),
   run: document.getElementById("screen-run"),
   done: document.getElementById("screen-done"),
@@ -19,16 +18,20 @@ const state = {
   results: {},
 };
 
-document.getElementById("btn-begin").addEventListener("click", async () => {
+async function loadCatalog() {
   const res = await fetch("/api/catalog");
   state.catalog = await res.json();
   const osHint = document.getElementById("os-hint");
   if (osHint && state.catalog.os) {
-    osHint.textContent = "This computer: " + state.catalog.os + "/" + state.catalog.arch + ". Stay here until it says done.";
+    osHint.textContent =
+      "This computer: " +
+      state.catalog.os +
+      "/" +
+      state.catalog.arch +
+      ". Check only what you want. Click Install — Windows asks for admin once, then this window finishes silently.";
   }
   renderTools();
-  show("pick");
-});
+}
 
 document.getElementById("btn-go").addEventListener("click", async () => {
   const ids = [...document.querySelectorAll("#tool-list input:checked")].map((el) => el.value);
@@ -46,8 +49,13 @@ document.getElementById("btn-go").addEventListener("click", async () => {
   });
 });
 
-document.getElementById("btn-continue").addEventListener("click", () => ack("installed"));
-document.getElementById("btn-skip").addEventListener("click", () => ack("skip"));
+function selectedIds() {
+  return [...document.querySelectorAll("#tool-list input:checked")].map((el) => el.value);
+}
+
+function syncInstallButton() {
+  document.getElementById("btn-go").disabled = selectedIds().length === 0;
+}
 
 function renderTools() {
   const form = document.getElementById("tool-list");
@@ -57,10 +65,6 @@ function renderTools() {
     label.className = "tool";
     const extra = extraFor(tool);
     const disabled = tool.available ? "" : "disabled";
-    let checked = tool.selected && tool.available ? "checked" : "";
-    if (tool.id === "vscode") {
-      checked = "";
-    }
     if (!tool.available) {
       label.classList.add("unavailable");
     }
@@ -68,14 +72,17 @@ function renderTools() {
       label.classList.add("installed");
     }
     label.innerHTML = `
-      <input type="checkbox" value="${tool.id}" ${checked} ${disabled} />
+      <input type="checkbox" value="${tool.id}" ${disabled} />
       <span>
         <strong>${tool.name}</strong>
         <span class="badge">${tool.group}${extra ? " · " + extra : ""}</span>
         <small>${tool.reason || tool.summary}</small>
       </span>`;
+    const box = label.querySelector("input");
+    box.addEventListener("change", syncInstallButton);
     form.appendChild(label);
   }
+  syncInstallButton();
 }
 
 function extraFor(tool) {
@@ -85,7 +92,7 @@ function extraFor(tool) {
     case "unavailable":
       return "no installer here";
     case "vendor_page":
-      return "vendor page";
+      return "needs vendor page";
     case "git_clone":
       return "clone (optional)";
     case "download":
@@ -93,7 +100,7 @@ function extraFor(tool) {
         return "already current";
       }
       if (tool.installed) {
-        return "found — will ask update";
+        return "found — will update";
       }
       return tool.version || "";
     default:
@@ -110,7 +117,13 @@ function listen() {
 }
 
 function onEvent(e) {
-  if (!e.toolId && e.phase === "done") {
+  if (!e.toolId && (e.phase === "done" || e.phase === "elevate")) {
+    if (e.phase === "elevate") {
+      document.getElementById("phase").textContent = labelPhase(e.phase);
+      document.getElementById("tool-name").textContent = "Admin once";
+      document.getElementById("message").textContent = e.message || "";
+      return;
+    }
     renderSummary();
     show("done");
     return;
@@ -128,29 +141,6 @@ function onEvent(e) {
   document.getElementById("bar-fill").style.width = pct + "%";
   document.getElementById("bytes").textContent = e.total ? formatBytes(e.got) + " / " + formatBytes(e.total) : "";
 
-  const need = !!e.needAck;
-  const cont = document.getElementById("btn-continue");
-  const skip = document.getElementById("btn-skip");
-  cont.classList.toggle("hidden", !need);
-  skip.classList.toggle("hidden", !need);
-  switch (e.ackKind) {
-    case "update":
-      cont.textContent = "Update";
-      skip.textContent = "Keep this version";
-      break;
-    case "vendor":
-      cont.textContent = "I finished this step";
-      skip.textContent = "Skip";
-      break;
-    case "verify":
-      cont.textContent = "Continue";
-      skip.textContent = "Skip";
-      break;
-    default:
-      cont.textContent = "I finished this step";
-      skip.textContent = "Skip";
-      break;
-  }
   const open = document.getElementById("btn-open");
   if (e.url) {
     open.href = e.url;
@@ -164,21 +154,6 @@ function onEvent(e) {
   }
 }
 
-function ack(action) {
-  let send = action;
-  const cont = document.getElementById("btn-continue");
-  if (action === "installed" && cont && cont.textContent === "Update") {
-    send = "update";
-  }
-  fetch("/api/ack", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ toolId: state.currentId, action: send }),
-  });
-  document.getElementById("btn-continue").classList.add("hidden");
-  document.getElementById("btn-skip").classList.add("hidden");
-}
-
 function toolName(id) {
   const t = state.catalog?.tools?.find((x) => x.id === id);
   return t ? t.name : id;
@@ -188,6 +163,8 @@ function labelPhase(phase) {
   switch (phase) {
     case "check":
       return "Checking";
+    case "elevate":
+      return "Admin once";
     case "download":
       return "Downloading";
     case "install":
@@ -195,7 +172,7 @@ function labelPhase(phase) {
     case "verify":
       return "Checking it worked";
     case "vendor":
-      return "Vendor page";
+      return "Needs vendor page";
     case "done":
       return "Done";
     case "skip":
@@ -231,7 +208,7 @@ function renderSummary() {
     } else if (ev.phase === "error") {
       li.textContent = name + " — stopped. " + (ev.message || "");
     } else if (ev.phase === "skip") {
-      li.textContent = name + " — skipped";
+      li.textContent = name + " — " + (ev.message || "skipped");
     } else if (ev.already) {
       li.textContent = name + " — already on this laptop";
     } else {
@@ -240,3 +217,5 @@ function renderSummary() {
     ul.appendChild(li);
   }
 }
+
+loadCatalog();

@@ -1,17 +1,18 @@
 # FRC Computer Setup
 
-**One download. Official latest only. Detect first — do not blindly reinstall.**
+**One download. Check what you want. Click Install. The wizard does the rest.**
 
-This wizard sets up an FRC programming computer (Team 6925 stack). It does **not** ship WPILib, NI, Limelight, PathPlanner, or anyone else’s binaries. It downloads the official latest stable files (SHA-256 or ETag + size).
+This is an orchestrator only. It does **not** ship WPILib, NI, Limelight, PathPlanner, or anyone else’s binaries. It downloads official latest stable files (SHA-256 or ETag + size).
 
-Driver Station is **Windows-only**.
+Driver Station is **Windows-only**. There is no Vercel app for this installer.
 
 ## Run it
 
 1. Download the file for **this** computer from [Releases](https://github.com/sahil-patel-2011/frc-computer-setup/releases/latest).
-2. Run it. Click **Start**.
-3. We **check what is already installed**. Current → skip. Older/unknown → **Update** or keep it.
-4. **Install VS Code?** Default **no**. WPILib already ships VS Code. Check the box only if you want a separate Microsoft VS Code.
+2. Run it. First screen is a **checklist**. Nothing installs unless you check it.
+3. Click **Install**. Windows asks for **admin once**. After that: no per-app UAC, no vendor Next/Next, no extra yes/no.
+4. Each checked tool installs silently (`/S`, `/VERYSILENT`, WPILib `--force` if the ISO has a CLI). Then a self-check (path/version). Fail → one silent retry → report.
+5. If a vendor has no silent installer (NI Game Tools, Phoenix, REV, Limelight Windows, Git on mac/Linux, WPILib without a CLI), that row is **needs vendor page** — we do not pop junk dialogs.
 
 | This computer | Download this |
 | --- | --- |
@@ -28,11 +29,17 @@ Preview (no vendor downloads):
 go run ./cmd/frc-computer-setup --demo
 ```
 
-## 6925 stack (get robot code working)
+CLI (nothing runs unless you pass ids):
 
-On by default: Git, WPILib, Driver Station (Windows / NI page), PathPlanner, AdvantageScope, Choreo, Elastic, Limelight Hardware Manager, Phoenix Tuner X (vendor page).
+```text
+go run ./cmd/frc-computer-setup --cli --tools=git,wpilib
+```
 
-Ask first: **VS Code** (default off). Optional: clone public `6925-RobotCodeUpdated` after Git works (no secrets). REV Hardware Client is a vendor page if you need SPARKs.
+## 6925 stack
+
+Check the ones you want: Git, WPILib, Driver Station (Windows / vendor page), PathPlanner, AdvantageScope, Choreo, Elastic, Limelight Hardware Manager, Phoenix Tuner X (vendor page), optional Microsoft VS Code, optional public clone of `6925-RobotCodeUpdated`.
+
+VS Code is **not** asked again after the checklist. WPILib already ships VS Code — check Microsoft VS Code only if you want a second copy.
 
 PhotonVision is **not** installed — 6925 robot code uses Limelight.
 

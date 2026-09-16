@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -16,10 +15,17 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "--install-helper" {
+		if err := host.RunInstallHelper(os.Args[2:]); err != nil {
+			os.Exit(1)
+		}
+		return
+	}
+
 	cli := flag.Bool("cli", false, "text walkthrough instead of the window")
 	demo := flag.Bool("demo", false, "walk the wizard without downloading vendor installers")
 	printManifest := flag.Bool("print-manifest", false, "print the pinned catalog and exit")
-	toolsFlag := flag.String("tools", "", "comma-separated tool ids (cli only)")
+	toolsFlag := flag.String("tools", "", "comma-separated tool ids (nothing is selected unless you pass this)")
 	flag.Parse()
 
 	catalog, err := manifest.Default()
@@ -56,11 +62,11 @@ func main() {
 	}
 
 	if *cli {
-		ids := engine.DefaultSelected(catalog, h.GOOS(), h.GOARCH())
-		if *toolsFlag != "" {
-			ids = splitCSV(*toolsFlag)
+		if strings.TrimSpace(*toolsFlag) == "" {
+			fmt.Fprintln(os.Stderr, "Nothing selected. Pass --tools=git,wpilib (the checklist starts empty).")
+			os.Exit(1)
 		}
-		runCLI(runner, catalog, ids)
+		runCLI(runner, catalog, splitCSV(*toolsFlag))
 		return
 	}
 
@@ -78,28 +84,13 @@ func main() {
 }
 
 func runCLI(runner *engine.Runner, catalog *manifest.Catalog, ids []string) {
-	in := bufio.NewReader(os.Stdin)
 	for _, id := range ids {
 		tool, ok := catalog.Tool(id)
 		if !ok {
 			fmt.Printf("Unknown tool %s — skipped.\n", id)
 			continue
 		}
-		var ack chan string
-		if tool.Kind == "vendor_page" {
-			fmt.Printf("Official page: %s\nType done when finished, or skip:\n", tool.VendorURL)
-			ack = make(chan string, 1)
-			go func() {
-				line, _ := in.ReadString('\n')
-				line = strings.TrimSpace(strings.ToLower(line))
-				if line == "s" || line == "skip" {
-					ack <- "skip"
-					return
-				}
-				ack <- "installed"
-			}()
-		}
-		res := runner.RunTool(tool, ack)
+		res := runner.RunTool(tool, nil)
 		fmt.Printf("→ %s: %s\n\n", res.Tool.Name, res.Message)
 	}
 	fmt.Println("Walkthrough finished.")

@@ -47,7 +47,7 @@ func TestDetectCurrentSkipsReinstall(t *testing.T) {
 	}
 }
 
-func TestDetectOffersUpdate(t *testing.T) {
+func TestDetectOffersUpdateSilently(t *testing.T) {
 	h := &host.Fake{
 		Win:   true,
 		Files: map[string]bool{`C:\Program Files\Git\cmd\git.exe`: true},
@@ -56,25 +56,23 @@ func TestDetectOffersUpdate(t *testing.T) {
 			`C:\Program Files\Git\cmd\git.exe`: "git version 2.40.0.windows.1",
 		},
 	}
-	ack := make(chan string, 1)
-	ack <- "skip"
 	var kinds []string
 	r := &Runner{Host: h, Demo: true, Emit: func(e Event) {
 		if e.AckKind != "" {
 			kinds = append(kinds, e.AckKind)
 		}
+		if e.NeedAck {
+			t.Errorf("must not ask after checklist: %+v", e)
+		}
 	}}
 	tool := sampleGit("https://example.invalid/Git.exe", strings.Repeat("a", 64), 1)
 	tool.Pinned.Version = "v2.55.0.windows.5"
-	res := r.RunTool(tool, ack)
-	if res.Message != "already installed" {
+	res := r.RunTool(tool, nil)
+	if res.Status != StatusOK || res.Message != "demo" {
 		t.Fatalf("%+v", res)
 	}
-	if len(kinds) == 0 || kinds[0] != "update" {
-		t.Fatalf("ack kinds %v", kinds)
-	}
-	if len(h.Started) != 0 {
-		t.Fatal("skip must not reinstall")
+	if len(kinds) != 0 {
+		t.Fatalf("no extra yes/no, got ack kinds %v", kinds)
 	}
 }
 
@@ -87,12 +85,10 @@ func TestDetectUpdateProceedsInDemo(t *testing.T) {
 			`C:\Program Files\Git\cmd\git.exe`: "git version 2.40.0.windows.1",
 		},
 	}
-	ack := make(chan string, 1)
-	ack <- "update"
 	r := &Runner{Host: h, Demo: true, Emit: func(Event) {}}
 	tool := sampleGit("https://example.invalid/Git.exe", strings.Repeat("b", 64), 9)
 	tool.Pinned.Version = "v2.55.0.windows.5"
-	res := r.RunTool(tool, ack)
+	res := r.RunTool(tool, nil)
 	if res.Status != StatusOK || res.Message != "demo" {
 		t.Fatalf("%+v", res)
 	}
@@ -158,11 +154,7 @@ func TestVSCodeNotSelectedByDefault(t *testing.T) {
 		t.Fatal(err)
 	}
 	ids := DefaultSelected(c, "windows", "amd64")
-	joined := strings.Join(ids, ",")
-	if strings.Contains(joined, "vscode") {
-		t.Fatal("VS Code must default off")
-	}
-	if !strings.Contains(joined, "limelight") || !strings.Contains(joined, "elastic") {
-		t.Fatalf("6925 stack missing in %v", ids)
+	if len(ids) != 0 {
+		t.Fatalf("nothing is checked unless the user checks it, got %v", ids)
 	}
 }

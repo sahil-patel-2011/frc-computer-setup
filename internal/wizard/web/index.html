@@ -11,26 +11,15 @@
     <header class="top">
       <p class="kicker">New FRC computer</p>
       <h1>Computer setup</h1>
-      <p class="lead" id="lead">One walkthrough. Official downloads only. You should not hunt fifty vendor pages.</p>
+      <p class="lead" id="lead">Check what you want. Click Install. Windows asks for admin once. This window does the rest.</p>
     </header>
 
-    <section id="screen-welcome" class="card">
-      <ol class="steps-preview">
-        <li>We check what is already on <strong>this</strong> computer</li>
-        <li>Missing → official latest. Already there → Update or skip</li>
-        <li>VS Code is a yes/no. Default no (WPILib already ships one)</li>
-        <li>Driver Station is Windows-only</li>
-      </ol>
-      <p class="hint" id="os-hint">Stay on this window until it says done.</p>
-      <button class="primary" id="btn-begin" type="button">Start</button>
-    </section>
-
-    <section id="screen-pick" class="card hidden">
-      <h2>What to install</h2>
-      <p class="hint">Required and recommended are on. <strong>Install VS Code?</strong> is off unless you check it. Uncheck anything you don’t need.</p>
+    <section id="screen-pick" class="card">
+      <h2>What should this computer get?</h2>
+      <p class="hint" id="os-hint">Nothing installs unless you check it. Required / recommended is a label only. After Install: one admin prompt, then silent installs and self-checks — no Next/Next, no extra yes/no.</p>
       <form id="tool-list"></form>
       <div class="row">
-        <button class="primary" id="btn-go" type="button">Download and install</button>
+        <button class="primary" id="btn-go" type="button" disabled>Install</button>
       </div>
     </section>
 
@@ -42,8 +31,6 @@
       <p class="message" id="message">Hang on.</p>
       <p class="bytes" id="bytes"></p>
       <div class="row" id="ack-row">
-        <button class="primary hidden" id="btn-continue" type="button">I finished this step</button>
-        <button class="ghost hidden" id="btn-skip" type="button">Skip</button>
         <a class="ghost hidden" id="btn-open" href="#" target="_blank" rel="noreferrer">Open vendor page</a>
       </div>
     </section>

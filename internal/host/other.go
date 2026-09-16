@@ -25,7 +25,7 @@ func openURL(url string) error {
 	}
 }
 
-func installWPILibISO(isoPath string) error {
+func installWPILibISO(isoPath string, args []string) error {
 	return fmt.Errorf("WPILib ISO install is Windows-only (got %s). File is at %s", runtime.GOOS, isoPath)
 }
 
@@ -52,8 +52,7 @@ func installDMG(path string) error {
 		apps, _ = filepath.Glob(filepath.Join(mount, "*", "*.app"))
 	}
 	if len(apps) == 0 {
-		// Installer DMG (not a drag-to-Applications app). Vendor GUI.
-		return exec.Command("open", "-W", path).Run()
+		return fmt.Errorf("needs vendor page: this DMG has no app to copy silently")
 	}
 	home, _ := os.UserHomeDir()
 	userApps := ""
@@ -89,24 +88,82 @@ func installTarball(path string) error {
 	return err
 }
 
-func installWPILibTarball(path string) error {
+func installWPILibDMG(path string, args []string) error {
+	if runtime.GOOS != "darwin" {
+		return fmt.Errorf("WPILib DMG install is macOS-only")
+	}
+	if !HasSilentFlags(args) {
+		return fmt.Errorf("needs vendor page: WPILib has no silent flags")
+	}
+	mount := filepath.Join(os.TempDir(), fmt.Sprintf("frc-wpilib-dmg-%d", os.Getpid()))
+	_ = os.RemoveAll(mount)
+	if err := os.MkdirAll(mount, 0o755); err != nil {
+		return err
+	}
+	out, err := exec.Command("hdiutil", "attach", "-nobrowse", "-readonly", "-mountpoint", mount, path).CombinedOutput()
+	if err != nil {
+		_ = os.RemoveAll(mount)
+		return fmt.Errorf("hdiutil attach: %s: %w", strings.TrimSpace(string(out)), err)
+	}
+	defer func() {
+		_ = exec.Command("hdiutil", "detach", mount, "-quiet").Run()
+		_ = os.RemoveAll(mount)
+	}()
+	cli := findWPILibCLI(mount)
+	if cli == "" {
+		return fmt.Errorf("needs vendor page: this WPILib DMG has no silent CLI installer")
+	}
+	if err := os.Chmod(cli, 0o755); err != nil {
+		return err
+	}
+	cmd := exec.Command(cli, args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+func installWPILibTarball(path string, args []string) error {
+	if !HasSilentFlags(args) {
+		return fmt.Errorf("needs vendor page: WPILib has no silent flags")
+	}
 	dir, err := extractTarGz(path)
 	if err != nil {
 		return err
 	}
-	setup := filepath.Join(dir, "WPILibInstaller")
-	if _, err := os.Stat(setup); err != nil {
-		matches, _ := filepath.Glob(filepath.Join(dir, "*", "WPILibInstaller"))
-		if len(matches) == 0 {
-			fmt.Printf("Extracted to %s. Run WPILibInstaller from that folder.\n", dir)
-			return nil
-		}
-		setup = matches[0]
+	cli := findWPILibCLI(dir)
+	if cli == "" {
+		return fmt.Errorf("needs vendor page: this WPILib archive has no silent CLI installer")
 	}
-	if err := os.Chmod(setup, 0o755); err != nil {
+	if err := os.Chmod(cli, 0o755); err != nil {
 		return err
 	}
-	return exec.Command(setup).Run()
+	cmd := exec.Command(cli, args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+func findWPILibCLI(root string) string {
+	names := []string{
+		"WPILibInstallerCLI",
+		"WPILibInstaller.CLI",
+		"WPILibInstaller-CLI",
+	}
+	var found string
+	_ = filepath.Walk(root, func(p string, info os.FileInfo, err error) error {
+		if err != nil || info == nil || info.IsDir() {
+			return nil
+		}
+		base := filepath.Base(p)
+		for _, n := range names {
+			if base == n {
+				found = p
+				return filepath.SkipAll
+			}
+		}
+		return nil
+	})
+	return found
 }
 
 func extractTarGz(path string) (string, error) {

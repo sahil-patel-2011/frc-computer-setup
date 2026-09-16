@@ -21,8 +21,9 @@ type Host interface {
 	Run(name string, args ...string) (string, error)
 	StartWait(path string, args []string) error
 	OpenURL(url string) error
-	InstallWPILibISO(isoPath string) error
+	InstallWPILibISO(isoPath string, args []string) error
 	InstallKind(kind, path string, args []string) error
+	EnsureElevated() error
 	IsWindows() bool
 	GOOS() string
 	GOARCH() string
@@ -33,9 +34,18 @@ type Real struct {
 	RunCmd  func(name string, args ...string) (string, error)
 	Start   func(path string, args []string) error
 	Open    func(url string) error
-	ISO     func(isoPath string) error
+	ISO     func(isoPath string, args []string) error
 	Windows bool
 	Now     func() time.Time
+
+	proxy    installProxy
+	elevated bool
+}
+
+type installProxy interface {
+	StartWait(path string, args []string) error
+	InstallKind(kind, path string, args []string) error
+	Close() error
 }
 
 func NewReal() *Real {
@@ -72,6 +82,9 @@ func (h *Real) Run(name string, args ...string) (string, error) {
 }
 
 func (h *Real) StartWait(path string, args []string) error {
+	if h.proxy != nil {
+		return h.proxy.StartWait(path, args)
+	}
 	if h.Start != nil {
 		return h.Start(path, args)
 	}
@@ -88,11 +101,18 @@ func (h *Real) OpenURL(url string) error {
 	return openURL(url)
 }
 
-func (h *Real) InstallWPILibISO(isoPath string) error {
-	if h.ISO != nil {
-		return h.ISO(isoPath)
+func (h *Real) InstallWPILibISO(isoPath string, args []string) error {
+	if h.proxy != nil {
+		return h.proxy.InstallKind("wpilib_iso", isoPath, args)
 	}
-	return installWPILibISO(isoPath)
+	if h.ISO != nil {
+		return h.ISO(isoPath, args)
+	}
+	return installWPILibISO(isoPath, args)
+}
+
+func (h *Real) EnsureElevated() error {
+	return h.ensureElevated()
 }
 
 func (h *Real) IsWindows() bool {
@@ -108,17 +128,27 @@ func (h *Real) GOARCH() string {
 }
 
 func (h *Real) InstallKind(kind, path string, args []string) error {
+	if h.proxy != nil {
+		switch kind {
+		case "exe", "", "wpilib_iso", "wpilib_dmg", "wpilib_tarball", "dmg", "tarball", "zip", "appimage", "git_clone":
+			return h.proxy.InstallKind(kind, path, args)
+		default:
+			return fmt.Errorf("unknown install type %s", kind)
+		}
+	}
 	switch kind {
 	case "exe", "":
 		return h.StartWait(path, args)
 	case "wpilib_iso":
-		return h.InstallWPILibISO(path)
-	case "dmg", "wpilib_dmg":
+		return h.InstallWPILibISO(path, args)
+	case "dmg":
 		return installDMG(path)
+	case "wpilib_dmg":
+		return installWPILibDMG(path, args)
 	case "tarball":
 		return installTarball(path)
 	case "wpilib_tarball":
-		return installWPILibTarball(path)
+		return installWPILibTarball(path, args)
 	case "zip":
 		return installZip(path)
 	case "appimage":

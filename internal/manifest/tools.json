@@ -67,7 +67,8 @@
           "/VERYSILENT",
           "/NORESTART",
           "/SP-",
-          "/CURRENTUSER"
+          "/ALLUSERS",
+          "/SUPPRESSMSGBOXES"
         ]
       },
       "installs": {
@@ -77,7 +78,8 @@
             "/VERYSILENT",
             "/NORESTART",
             "/SP-",
-            "/CURRENTUSER"
+            "/ALLUSERS",
+            "/SUPPRESSMSGBOXES"
           ]
         }
       },
@@ -182,17 +184,41 @@
         }
       },
       "install": {
-        "type": "wpilib_iso"
+        "type": "wpilib_iso",
+        "args": [
+          "--force",
+          "-y",
+          "--install-mode",
+          "all"
+        ]
       },
       "installs": {
         "windows": {
-          "type": "wpilib_iso"
+          "type": "wpilib_iso",
+          "args": [
+            "--force",
+            "-y",
+            "--install-mode",
+            "all"
+          ]
         },
         "darwin": {
-          "type": "wpilib_dmg"
+          "type": "wpilib_dmg",
+          "args": [
+            "--force",
+            "-y",
+            "--install-mode",
+            "all"
+          ]
         },
         "linux": {
-          "type": "wpilib_tarball"
+          "type": "wpilib_tarball",
+          "args": [
+            "--force",
+            "-y",
+            "--install-mode",
+            "all"
+          ]
         }
       },
       "verify": {
@@ -299,6 +325,7 @@
         "args": [
           "/VERYSILENT",
           "/NORESTART",
+          "/SUPPRESSMSGBOXES",
           "/MERGETASKS=!runcode"
         ]
       },
@@ -308,6 +335,7 @@
           "args": [
             "/VERYSILENT",
             "/NORESTART",
+            "/SUPPRESSMSGBOXES",
             "/MERGETASKS=!runcode"
           ]
         },

@@ -119,13 +119,9 @@ func (s *Server) catalog(w http.ResponseWriter, r *http.Request) {
 		resolved := t.Resolve(goos, goarch)
 		kind := t.EffectiveKind(goos, goarch)
 		available := kind != "windows_only" && kind != "unavailable"
-		selected := available && t.SelectedByDefault()
-		if t.ID == "vscode" {
-			selected = false
-		}
 		item := tool{
 			ID: t.ID, Name: t.Name, Summary: t.Summary, Why: t.Why,
-			Group: t.Group, Kind: kind, Selected: selected,
+			Group: t.Group, Kind: kind, Selected: false,
 			Available: available, WindowsOnly: t.WindowsOnly, VendorURL: resolved.VendorURL,
 		}
 		det := engine.DetectTool(s.Host, resolved)
@@ -133,18 +129,26 @@ func (s *Server) catalog(w http.ResponseWriter, r *http.Request) {
 		item.HaveVersion = det.Version
 		item.Current = det.Current
 		if t.ID == "vscode" {
-			item.Prompt = "Install VS Code?"
 			if engine.WPILibVSCodeInstalled(s.Host, s.Catalog.Season) {
-				item.Reason = "WPILib already ships VS Code. Leave this off unless you want a separate Microsoft VS Code."
+				item.Reason = "WPILib already ships VS Code. Check this only if you also want a separate Microsoft VS Code."
 			} else {
-				item.Reason = "Install VS Code? Default is no. WPILib’s VS Code is enough for robot code."
+				item.Reason = "Optional. WPILib’s VS Code is enough for robot code — check this only if you want Microsoft VS Code too."
 			}
+		}
+		if !engine.CanInstallSilently(resolved) && kind == "download" {
+			item.Kind = "vendor_page"
+			if item.Reason == "" {
+				item.Reason = "No silent installer. If you check this, we skip to the vendor page — no extra dialogs."
+			}
+		}
+		if kind == "vendor_page" && item.Reason == "" {
+			item.Reason = "Needs the vendor page (no silent installer). Checking it records the link — we will not pop a wizard."
 		}
 		if det.Installed && item.Reason == "" {
 			if det.Current {
-				item.Reason = "Already current on this computer. Uncheck to skip; leave checked only if you want the walkthrough to offer Update."
+				item.Reason = "Already current. Checking it still skips the download."
 			} else {
-				item.Reason = "Already found. The walkthrough will ask Update or skip — it will not reinstall unless you say Update."
+				item.Reason = "Found an older copy. Checking it updates silently — we will not ask again."
 			}
 		}
 		if !available && t.WindowsOnly {
@@ -198,11 +202,7 @@ func (s *Server) run(w http.ResponseWriter, r *http.Request) {
 				s.broadcast(engine.Event{ToolID: id, Phase: engine.PhaseError, Message: "Unknown tool", Err: "unknown"})
 				continue
 			}
-			s.mu.Lock()
-			ch := make(chan string, 1)
-			s.acks[id] = ch
-			s.mu.Unlock()
-			s.Runner.RunTool(tool, ch)
+			s.Runner.RunTool(tool, nil)
 		}
 		s.broadcast(engine.Event{ToolID: "", Name: "", Phase: engine.PhaseDone, Message: "Setup walkthrough finished."})
 	}()

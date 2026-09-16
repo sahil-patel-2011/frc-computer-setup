@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/sahil-patel-2011/frc-computer-setup/internal/download"
@@ -15,6 +16,7 @@ type Phase string
 
 const (
 	PhaseCheck    Phase = "check"
+	PhaseElevate  Phase = "elevate"
 	PhaseDownload Phase = "download"
 	PhaseInstall  Phase = "install"
 	PhaseVerify   Phase = "verify"
@@ -60,6 +62,8 @@ type Runner struct {
 	Cache   string
 	Demo    bool
 	Emit    func(Event)
+
+	gotElevation bool
 }
 
 func (r *Runner) event(e Event) {
@@ -96,7 +100,45 @@ func VerifyTool(h host.Host, tool manifest.Tool) error {
 	return host.Verify(h, tool.Verify.Paths, cmds)
 }
 
-func (r *Runner) RunTool(tool manifest.Tool, ack <-chan string) ToolResult {
+func CanInstallSilently(tool manifest.Tool) bool {
+	if tool.Kind == "git_clone" {
+		return true
+	}
+	inst := tool.Install
+	if inst == nil {
+		return false
+	}
+	switch inst.Type {
+	case "git_clone", "dmg", "zip", "tarball", "appimage":
+		return true
+	case "exe", "wpilib_iso", "wpilib_dmg", "wpilib_tarball":
+		return host.HasSilentFlags(inst.Args)
+	default:
+		return false
+	}
+}
+
+func (r *Runner) Run(ids []string) []ToolResult {
+	out := make([]ToolResult, 0, len(ids))
+	if r.Catalog == nil {
+		for _, id := range ids {
+			out = append(out, ToolResult{Tool: manifest.Tool{ID: id}, Status: StatusFailed, Message: "no catalog"})
+		}
+		return out
+	}
+	for _, id := range ids {
+		tool, ok := r.Catalog.Tool(id)
+		if !ok {
+			r.event(Event{ToolID: id, Phase: PhaseError, Message: "Unknown tool", Err: "unknown"})
+			out = append(out, ToolResult{Tool: manifest.Tool{ID: id}, Status: StatusFailed, Message: "unknown"})
+			continue
+		}
+		out = append(out, r.RunTool(tool, nil))
+	}
+	return out
+}
+
+func (r *Runner) RunTool(tool manifest.Tool, _ <-chan string) ToolResult {
 	goos, goarch := r.osArch()
 	if !tool.AvailableOn(goos) {
 		msg := "Windows only — FRC Driver Station does not run on this computer."
@@ -110,44 +152,32 @@ func (r *Runner) RunTool(tool manifest.Tool, ack <-chan string) ToolResult {
 	r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseCheck, Message: "Checking whether this is already on the computer…"})
 	det := DetectTool(r.Host, tool)
 	if tool.Kind == "git_clone" {
-		return r.runClone(tool, det, ack)
+		return r.runClone(tool, det)
 	}
-	if det.Installed {
-		if det.Current {
-			msg := "Already current (" + det.Version + "). Next."
-			if det.Version == "" {
-				msg = "Already current. Next."
-			}
-			r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseDone, Message: msg, Already: true})
-			return ToolResult{Tool: tool, Status: StatusOK, Message: "already installed"}
+	if det.Installed && det.Current {
+		msg := "Already current (" + det.Version + "). Next."
+		if det.Version == "" {
+			msg = "Already current. Next."
 		}
-		offer := "Found on this computer."
-		if det.Version != "" && tool.Pinned != nil {
-			offer = "Found " + det.Version + ". Latest official is " + tool.Pinned.Version + ". Update or skip?"
-		} else {
-			offer = "Found. Could not prove it matches the latest official. Update or skip? (Will not reinstall unless you pick Update.)"
-		}
-		r.event(Event{
-			ToolID:  tool.ID,
-			Name:    tool.Name,
-			Phase:   PhaseCheck,
-			Message: offer,
-			NeedAck: true,
-			AckKind: "update",
-			Already: true,
-		})
-		action := waitAck(ack, "skip")
-		if action != "update" && action != "installed" {
-			r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseSkip, Message: "Kept the version already on this computer. Next.", Already: true})
-			return ToolResult{Tool: tool, Status: StatusOK, Message: "already installed"}
-		}
+		r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseDone, Message: msg, Already: true})
+		return ToolResult{Tool: tool, Status: StatusOK, Message: "already installed"}
+	}
+	if det.Installed && det.Version == "" {
+		r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseDone, Message: "Already on this computer. Could not prove a newer official build. Keeping it.", Already: true})
+		return ToolResult{Tool: tool, Status: StatusOK, Message: "already installed"}
+	}
+	if det.Installed && !det.Current {
+		r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseCheck, Message: "Found an older copy. Updating silently because you checked it."})
 	}
 
 	switch tool.Kind {
 	case "vendor_page":
-		return r.runVendor(tool, ack)
+		return r.skipNeedsVendor(tool, tool.UnprovenReason)
 	case "download":
-		return r.runDownload(tool, ack)
+		if !CanInstallSilently(tool) {
+			return r.skipNeedsVendor(tool, "No silent installer flags. Needs the vendor page — not popping a wizard.")
+		}
+		return r.runDownload(tool)
 	case "unavailable":
 		if tool.VendorURL == "" {
 			tool.VendorURL = tool.DocsURL
@@ -158,9 +188,9 @@ func (r *Runner) RunTool(tool manifest.Tool, ack <-chan string) ToolResult {
 			return ToolResult{Tool: tool, Status: StatusSkipped, Message: "unavailable"}
 		}
 		tool.Kind = "vendor_page"
-		return r.runVendor(tool, ack)
+		return r.skipNeedsVendor(tool, "No official silent installer for this computer.")
 	case "git_clone":
-		return r.runClone(tool, det, ack)
+		return r.runClone(tool, det)
 	case "windows_only":
 		r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseSkip, Message: "Windows only."})
 		return ToolResult{Tool: tool, Status: StatusSkipped, Message: "windows-only"}
@@ -171,43 +201,33 @@ func (r *Runner) RunTool(tool manifest.Tool, ack <-chan string) ToolResult {
 	}
 }
 
-func (r *Runner) runVendor(tool manifest.Tool, ack <-chan string) ToolResult {
-	why := tool.UnprovenReason
+func (r *Runner) skipNeedsVendor(tool manifest.Tool, why string) ToolResult {
 	if why == "" {
-		why = "No proven latest download URL. Opening the official vendor page instead of inventing a version."
+		why = "No silent official installer. Needs the vendor page — not popping extra dialogs."
+	}
+	if tool.VendorURL == "" {
+		tool.VendorURL = tool.DocsURL
+	}
+	msg := why
+	if tool.VendorURL != "" && !strings.Contains(msg, tool.VendorURL) {
+		msg = why + " " + tool.VendorURL
 	}
 	r.event(Event{
 		ToolID:  tool.ID,
 		Name:    tool.Name,
-		Phase:   PhaseVendor,
-		Message: why,
+		Phase:   PhaseSkip,
+		Message: "Needs vendor page: " + msg,
 		URL:     tool.VendorURL,
-		NeedAck: true,
-		AckKind: "vendor",
 	})
-	if !r.Demo {
-		_ = r.Host.OpenURL(tool.VendorURL)
-	}
-	action := waitAck(ack, "installed")
-	if action == "skip" {
-		r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseSkip, Message: "Skipped. You can do this later from the vendor page."})
-		return ToolResult{Tool: tool, Status: StatusSkipped, Message: "skipped"}
-	}
-	if tool.Verify != nil && VerifyTool(r.Host, tool) != nil && !r.Demo {
-		r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseVerify, Message: "Could not see it on disk yet. If the vendor installer finished, continue anyway — some tools install to unusual folders."})
-	}
-	r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseDone, Message: "Vendor step recorded. Next."})
-	return ToolResult{Tool: tool, Status: StatusVendor, Message: "vendor step"}
+	return ToolResult{Tool: tool, Status: StatusSkipped, Message: "needs vendor page"}
 }
 
-func (r *Runner) runDownload(tool manifest.Tool, ack <-chan string) ToolResult {
+func (r *Runner) runDownload(tool manifest.Tool) ToolResult {
 	if tool.Pinned == nil {
-		tool.Kind = "vendor_page"
 		if tool.VendorURL == "" {
 			tool.VendorURL = tool.DocsURL
 		}
-		tool.UnprovenReason = "Pinned URL missing. Not inventing a version."
-		return r.runVendor(tool, ack)
+		return r.skipNeedsVendor(tool, "Pinned URL missing. Not inventing a version.")
 	}
 
 	r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseDownload, Message: "Downloading the official installer…", Total: tool.Pinned.Size})
@@ -240,45 +260,63 @@ func (r *Runner) runDownload(tool manifest.Tool, ack <-chan string) ToolResult {
 		r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseDownload, Message: "Checksum matches the official release. Installing next.", Got: got.Size, Total: got.Size})
 	}
 
+	if err := r.ensureElevated(); err != nil {
+		msg := err.Error()
+		r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseError, Message: "Admin was declined. Nothing more was installed. " + msg, Err: msg})
+		return ToolResult{Tool: tool, Status: StatusFailed, Message: msg}
+	}
+
 	silentMsg := installMessage(tool.Install)
 	r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseInstall, Message: silentMsg})
 	if r.Demo {
 		time.Sleep(200 * time.Millisecond)
 	} else {
 		if err := r.install(tool, dest); err != nil {
+			if isNeedsVendor(err) {
+				return r.skipNeedsVendor(tool, err.Error())
+			}
 			msg := err.Error()
 			r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseError, Message: "Installer did not finish: " + msg, Err: msg})
 			return ToolResult{Tool: tool, Status: StatusFailed, Message: msg}
 		}
 	}
 
+	return r.selfCheck(tool, dest)
+}
+
+func (r *Runner) selfCheck(tool manifest.Tool, dest string) ToolResult {
 	r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseVerify, Message: "Checking that it landed on the laptop…"})
 	if r.Demo {
 		r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseDone, Message: "Demo verify OK. Next."})
 		return ToolResult{Tool: tool, Status: StatusOK, Message: "demo"}
 	}
-	if tool.Verify != nil {
-		if err := VerifyTool(r.Host, tool); err != nil {
-			r.event(Event{
-				ToolID:  tool.ID,
-				Name:    tool.Name,
-				Phase:   PhaseVerify,
-				Message: "Could not auto-detect it yet. If the official installer finished, click Continue.",
-				NeedAck: true,
-				AckKind: "verify",
-			})
-			action := waitAck(ack, "continue")
-			if action == "skip" {
-				r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseSkip, Message: "Skipped verify."})
-				return ToolResult{Tool: tool, Status: StatusSkipped, Message: "verify skipped"}
-			}
-		}
+	if tool.Verify == nil {
+		r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseDone, Message: "Installed. Next."})
+		return ToolResult{Tool: tool, Status: StatusOK, Message: "installed"}
 	}
-	r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseDone, Message: "Installed. Next."})
+	if err := VerifyTool(r.Host, tool); err == nil {
+		r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseDone, Message: "Installed. Next."})
+		return ToolResult{Tool: tool, Status: StatusOK, Message: "installed"}
+	}
+	r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseInstall, Message: "Self-check missed it. Retrying once, still silent."})
+	if err := r.install(tool, dest); err != nil {
+		if isNeedsVendor(err) {
+			return r.skipNeedsVendor(tool, err.Error())
+		}
+		msg := err.Error()
+		r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseError, Message: "Retry failed: " + msg, Err: msg})
+		return ToolResult{Tool: tool, Status: StatusFailed, Message: msg}
+	}
+	if err := VerifyTool(r.Host, tool); err != nil {
+		msg := "Self-check failed after a silent retry: " + err.Error()
+		r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseError, Message: msg, Err: msg})
+		return ToolResult{Tool: tool, Status: StatusFailed, Message: msg}
+	}
+	r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseDone, Message: "Installed after one silent retry. Next."})
 	return ToolResult{Tool: tool, Status: StatusOK, Message: "installed"}
 }
 
-func (r *Runner) runClone(tool manifest.Tool, det Detection, ack <-chan string) ToolResult {
+func (r *Runner) runClone(tool manifest.Tool, det Detection) ToolResult {
 	url := tool.CloneURL
 	dest := tool.CloneDest
 	if tool.Install != nil {
@@ -314,16 +352,38 @@ func (r *Runner) runClone(tool manifest.Tool, det Detection, ack <-chan string) 
 	return ToolResult{Tool: tool, Status: StatusOK, Message: "installed"}
 }
 
+func (r *Runner) ensureElevated() error {
+	if r.Host != nil && !r.Host.IsWindows() {
+		return nil
+	}
+	if r.gotElevation {
+		return nil
+	}
+	r.gotElevation = true
+	r.event(Event{Phase: PhaseElevate, Message: "Windows needs one admin yes. After that, this window does the rest."})
+	if r.Host == nil {
+		return nil
+	}
+	return r.Host.EnsureElevated()
+}
+
+func isNeedsVendor(err error) bool {
+	if err == nil {
+		return false
+	}
+	return strings.Contains(strings.ToLower(err.Error()), "needs vendor page")
+}
+
 func installMessage(inst *manifest.Install) string {
 	if inst == nil {
-		return "Launching the official installer. Finish its screens, then this wizard continues."
+		return "Installing silently. Stay on this step until it finishes."
 	}
 	switch inst.Type {
 	case "exe":
-		if len(inst.Args) > 0 {
+		if host.HasSilentFlags(inst.Args) {
 			return "Installing with the vendor’s silent flags. Stay on this step until it finishes."
 		}
-		return "Launching the official installer. Finish its screens, then this wizard continues."
+		return "Needs vendor page — this installer cannot run silently."
 	case "dmg":
 		return "Copying the official app into Applications (unattended). Stay on this step until it finishes."
 	case "appimage":
@@ -335,9 +395,12 @@ func installMessage(inst *manifest.Install) string {
 	case "git_clone":
 		return "Cloning the public repository (no secrets)."
 	case "wpilib_iso", "wpilib_dmg", "wpilib_tarball":
-		return "Launching the official WPILib installer. Finish its screens, then this wizard continues."
+		if host.HasSilentFlags(inst.Args) {
+			return "Installing WPILib silently. Stay on this step until it finishes."
+		}
+		return "Needs vendor page — WPILib has no silent installer on this computer."
 	default:
-		return "Launching the official installer. Finish its screens, then this wizard continues."
+		return "Installing silently. Stay on this step until it finishes."
 	}
 }
 
@@ -365,31 +428,6 @@ func (r *Runner) install(tool manifest.Tool, path string) error {
 	return r.Host.InstallKind(kind, path, args)
 }
 
-func waitAck(ack <-chan string, defaultAction string) string {
-	if ack == nil {
-		return defaultAction
-	}
-	select {
-	case v := <-ack:
-		if v == "" {
-			return defaultAction
-		}
-		return v
-	case <-time.After(4 * time.Hour):
-		return "skip"
-	}
-}
-
-func DefaultSelected(c *manifest.Catalog, goos, goarch string) []string {
-	var ids []string
-	for _, t := range c.Tools {
-		kind := t.EffectiveKind(goos, goarch)
-		if kind == "windows_only" || kind == "unavailable" {
-			continue
-		}
-		if t.SelectedByDefault() {
-			ids = append(ids, t.ID)
-		}
-	}
-	return ids
+func DefaultSelected(_ *manifest.Catalog, _, _ string) []string {
+	return nil
 }
