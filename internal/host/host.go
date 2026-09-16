@@ -22,7 +22,10 @@ type Host interface {
 	StartWait(path string, args []string) error
 	OpenURL(url string) error
 	InstallWPILibISO(isoPath string) error
+	InstallKind(kind, path string, args []string) error
 	IsWindows() bool
+	GOOS() string
+	GOARCH() string
 }
 
 type Real struct {
@@ -96,6 +99,33 @@ func (h *Real) IsWindows() bool {
 	return h.Windows
 }
 
+func (h *Real) GOOS() string {
+	return currentGOOS()
+}
+
+func (h *Real) GOARCH() string {
+	return currentGOARCH()
+}
+
+func (h *Real) InstallKind(kind, path string, args []string) error {
+	switch kind {
+	case "exe", "":
+		return h.StartWait(path, args)
+	case "wpilib_iso":
+		return h.InstallWPILibISO(path)
+	case "dmg", "wpilib_dmg":
+		return installDMG(path)
+	case "tarball", "wpilib_tarball":
+		return installTarball(path)
+	case "zip":
+		return installZip(path)
+	case "appimage":
+		return installAppImage(path)
+	default:
+		return fmt.Errorf("unknown install type %s", kind)
+	}
+}
+
 func Verify(h Host, paths []string, commands []struct {
 	Name string
 	Args []string
@@ -104,10 +134,11 @@ func Verify(h Host, paths []string, commands []struct {
 		if h.Exists(p) {
 			return nil
 		}
-		// directory or glob-ish year folder: treat as success if any child exists
 		exp := h.Expand(p)
-		if matches, _ := filepath.Glob(exp); len(matches) > 0 {
-			return nil
+		if strings.ContainsAny(exp, "*?[") {
+			if matches, _ := filepath.Glob(exp); len(matches) > 0 {
+				return nil
+			}
 		}
 	}
 	for _, c := range commands {

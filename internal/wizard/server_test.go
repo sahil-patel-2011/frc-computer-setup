@@ -18,7 +18,7 @@ func TestCatalogAndStatic(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h := &host.Fake{}
+	h := &host.Fake{Win: true}
 	r := &engine.Runner{Catalog: c, Host: h, Demo: true, Emit: func(engine.Event) {}}
 	s := New(c, r, h, true)
 	ts := httptest.NewServer(s.Handler())
@@ -43,11 +43,13 @@ func TestCatalogAndStatic(t *testing.T) {
 	}
 	defer res.Body.Close()
 	var cat struct {
-		Season int `json:"season"`
+		Season int    `json:"season"`
+		OS     string `json:"os"`
 		Tools  []struct {
-			ID       string `json:"id"`
-			Selected bool   `json:"selected"`
-			Kind     string `json:"kind"`
+			ID        string `json:"id"`
+			Selected  bool   `json:"selected"`
+			Kind      string `json:"kind"`
+			Available bool   `json:"available"`
 		} `json:"tools"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&cat); err != nil {
@@ -62,8 +64,11 @@ func TestCatalogAndStatic(t *testing.T) {
 		if tool.ID == "git" && !tool.Selected {
 			t.Fatal("git should be selected by default")
 		}
-		if tool.ID == "ni-game-tools" && tool.Kind != "vendor_page" {
-			t.Fatal("NI must stay a vendor page")
+		if tool.ID == "ni-game-tools" && (tool.Kind != "vendor_page" || !tool.Available || !tool.Selected) {
+			t.Fatalf("NI on Windows %+v", tool)
+		}
+		if tool.ID == "ni-game-tools" && !tool.Selected {
+			t.Fatal("NI selected on Windows")
 		}
 	}
 	for _, id := range []string{"git", "wpilib", "ni-game-tools", "pathplanner", "advantagescope", "choreo"} {
@@ -73,12 +78,114 @@ func TestCatalogAndStatic(t *testing.T) {
 	}
 }
 
+func TestCatalogLinuxHidesDriverStation(t *testing.T) {
+	c, err := manifest.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := &host.Fake{OS: "linux", Arch: "amd64"}
+	r := &engine.Runner{Catalog: c, Host: h, Demo: true, Emit: func(engine.Event) {}}
+	s := New(c, r, h, true)
+	ts := httptest.NewServer(s.Handler())
+	t.Cleanup(ts.Close)
+	res, err := http.Get(ts.URL + "/api/catalog")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer res.Body.Close()
+	var cat struct {
+		OS    string `json:"os"`
+		Tools []struct {
+			ID        string `json:"id"`
+			Selected  bool   `json:"selected"`
+			Kind      string `json:"kind"`
+			Available bool   `json:"available"`
+		} `json:"tools"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&cat); err != nil {
+		t.Fatal(err)
+	}
+	if cat.OS != "linux" {
+		t.Fatalf("os %s", cat.OS)
+	}
+	for _, tool := range cat.Tools {
+		switch tool.ID {
+		case "ni-game-tools":
+			if tool.Available || tool.Selected || tool.Kind != "windows_only" {
+				t.Fatalf("NI on linux %+v", tool)
+			}
+		case "wpilib":
+			if !tool.Available || !tool.Selected || tool.Kind != "download" {
+				t.Fatalf("wpilib on linux %+v", tool)
+			}
+		case "git":
+			if !tool.Selected || tool.Kind != "vendor_page" {
+				t.Fatalf("git on linux %+v", tool)
+			}
+		}
+	}
+}
+
+func TestCatalogDarwinWPILibDownload(t *testing.T) {
+	c, err := manifest.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := &host.Fake{OS: "darwin", Arch: "arm64"}
+	r := &engine.Runner{Catalog: c, Host: h, Demo: true, Emit: func(engine.Event) {}}
+	s := New(c, r, h, true)
+	ts := httptest.NewServer(s.Handler())
+	t.Cleanup(ts.Close)
+	res, err := http.Get(ts.URL + "/api/catalog")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer res.Body.Close()
+	var cat struct {
+		OS    string `json:"os"`
+		Tools []struct {
+			ID        string `json:"id"`
+			Selected  bool   `json:"selected"`
+			Kind      string `json:"kind"`
+			Available bool   `json:"available"`
+			Version   string `json:"version"`
+		} `json:"tools"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&cat); err != nil {
+		t.Fatal(err)
+	}
+	if cat.OS != "darwin" {
+		t.Fatalf("os %s", cat.OS)
+	}
+	for _, tool := range cat.Tools {
+		switch tool.ID {
+		case "ni-game-tools":
+			if tool.Available || tool.Kind != "windows_only" {
+				t.Fatalf("NI on darwin %+v", tool)
+			}
+		case "wpilib":
+			if !tool.Available || tool.Kind != "download" || tool.Version != "v2026.2.1" {
+				t.Fatalf("wpilib on darwin %+v", tool)
+			}
+		case "advantagescope", "choreo", "pathplanner":
+			if !tool.Available || tool.Kind != "download" {
+				t.Fatalf("%s on darwin %+v", tool.ID, tool)
+			}
+		case "git":
+			if tool.Kind != "vendor_page" {
+				t.Fatalf("git on darwin %+v", tool)
+			}
+		default:
+		}
+	}
+}
+
 func TestRunDemo(t *testing.T) {
 	c, err := manifest.Default()
 	if err != nil {
 		t.Fatal(err)
 	}
-	h := &host.Fake{}
+	h := &host.Fake{Win: true}
 	r := &engine.Runner{Catalog: c, Host: h, Demo: true, Emit: func(engine.Event) {}}
 	s := New(c, r, h, true)
 	ts := httptest.NewServer(s.Handler())

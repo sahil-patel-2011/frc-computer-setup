@@ -22,6 +22,10 @@ const state = {
 document.getElementById("btn-begin").addEventListener("click", async () => {
   const res = await fetch("/api/catalog");
   state.catalog = await res.json();
+  const osHint = document.getElementById("os-hint");
+  if (osHint && state.catalog.os) {
+    osHint.textContent = "This computer: " + state.catalog.os + "/" + state.catalog.arch + ". Stay here until it says done.";
+  }
   renderTools();
   show("pick");
 });
@@ -51,15 +55,35 @@ function renderTools() {
   for (const tool of state.catalog.tools) {
     const label = document.createElement("label");
     label.className = "tool";
-    const extra = tool.kind === "vendor_page" ? "vendor page" : tool.version || "";
+    const extra = extraFor(tool);
+    const disabled = tool.available ? "" : "disabled";
+    const checked = tool.selected && tool.available ? "checked" : "";
+    if (!tool.available) {
+      label.classList.add("unavailable");
+    }
     label.innerHTML = `
-      <input type="checkbox" value="${tool.id}" ${tool.selected ? "checked" : ""} />
+      <input type="checkbox" value="${tool.id}" ${checked} ${disabled} />
       <span>
         <strong>${tool.name}</strong>
         <span class="badge">${tool.group}${extra ? " · " + extra : ""}</span>
-        <small>${tool.summary}</small>
+        <small>${tool.reason || tool.summary}</small>
       </span>`;
     form.appendChild(label);
+  }
+}
+
+function extraFor(tool) {
+  switch (tool.kind) {
+    case "windows_only":
+      return "windows only";
+    case "unavailable":
+      return "no installer here";
+    case "vendor_page":
+      return "vendor page";
+    case "download":
+      return tool.version || "";
+    default:
+      return tool.kind || "";
   }
 }
 

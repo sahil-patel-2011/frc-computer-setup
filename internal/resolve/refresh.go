@@ -20,27 +20,63 @@ func (c *Client) RefreshTool(tool manifest.Tool) Result {
 		if err != nil {
 			return Result{VendorFallback: true, Reason: err.Error()}
 		}
-		pin, err := PinFromGitHub(rel, tool.Source.Asset, now)
-		if err != nil {
-			return Result{VendorFallback: true, Reason: err.Error()}
+		assets := map[string]string{}
+		for k, v := range tool.Source.Assets {
+			assets[k] = v
 		}
-		if err := c.FillHeaders(&pin); err != nil {
-			return Result{VendorFallback: true, Reason: err.Error()}
+		if len(assets) == 0 && tool.Source.Asset != "" {
+			assets["windows-amd64"] = tool.Source.Asset
 		}
-		return Result{Pin: pin}
+		if len(assets) == 0 {
+			return Result{VendorFallback: true, Reason: "no asset glob; not inventing a download"}
+		}
+		pins := map[string]manifest.Pin{}
+		var first manifest.Pin
+		for key, glob := range assets {
+			pin, err := PinFromGitHub(rel, glob, now)
+			if err != nil {
+				continue
+			}
+			if err := c.FillHeaders(&pin); err != nil {
+				continue
+			}
+			pins[key] = pin
+			if first.URL == "" || key == "windows-amd64" {
+				first = pin
+			}
+		}
+		if len(pins) == 0 {
+			return Result{VendorFallback: true, Reason: "no proven GitHub assets for this release"}
+		}
+		return Result{Pin: first, Pins: pins}
 	case tool.Source.Type == "wpilib_github_notes":
 		rel, err := c.Latest(tool.Source.Owner, tool.Source.Repo)
 		if err != nil {
 			return Result{VendorFallback: true, Reason: err.Error()}
 		}
-		pin, err := PinFromWPILibNotes(rel, now)
+		pins, err := PinsFromWPILibNotes(rel, now)
 		if err != nil {
 			return Result{VendorFallback: true, Reason: err.Error()}
 		}
-		if err := c.FillHeaders(&pin); err != nil {
-			return Result{VendorFallback: true, Reason: err.Error()}
+		for key, pin := range pins {
+			p := pin
+			if err := c.FillHeaders(&p); err != nil {
+				delete(pins, key)
+				continue
+			}
+			pins[key] = p
 		}
-		return Result{Pin: pin}
+		if len(pins) == 0 {
+			return Result{VendorFallback: true, Reason: "WPILib notes URLs did not HEAD successfully"}
+		}
+		first := pins["windows-amd64"]
+		if first.URL == "" {
+			for _, p := range pins {
+				first = p
+				break
+			}
+		}
+		return Result{Pin: first, Pins: pins}
 	default:
 		return Result{VendorFallback: true, Reason: fmt.Sprintf("unknown source type %q", tool.Source.Type)}
 	}
@@ -73,6 +109,7 @@ func Apply(tool *manifest.Tool, result Result) {
 	if result.VendorFallback {
 		tool.Kind = "vendor_page"
 		tool.Pinned = nil
+		tool.Pins = nil
 		if tool.UnprovenReason == "" {
 			tool.UnprovenReason = result.Reason
 		}
@@ -84,5 +121,12 @@ func Apply(tool *manifest.Tool, result Result) {
 	tool.Kind = "download"
 	pin := result.Pin
 	tool.Pinned = &pin
+	if result.Pins != nil {
+		tool.Pins = result.Pins
+		if p, ok := result.Pins["windows-amd64"]; ok {
+			cp := p
+			tool.Pinned = &cp
+		}
+	}
 	tool.UnprovenReason = ""
 }

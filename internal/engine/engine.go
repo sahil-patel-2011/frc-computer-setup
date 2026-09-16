@@ -68,6 +68,13 @@ func (r *Runner) event(e Event) {
 	}
 }
 
+func (r *Runner) osArch() (string, string) {
+	if r.Host == nil {
+		return "linux", "amd64"
+	}
+	return r.Host.GOOS(), r.Host.GOARCH()
+}
+
 func (r *Runner) AlreadyInstalled(tool manifest.Tool) bool {
 	return VerifyTool(r.Host, tool) == nil
 }
@@ -90,7 +97,17 @@ func VerifyTool(h host.Host, tool manifest.Tool) error {
 }
 
 func (r *Runner) RunTool(tool manifest.Tool, ack <-chan string) ToolResult {
-	r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseCheck, Message: "Checking whether this is already on the laptop…"})
+	goos, goarch := r.osArch()
+	if !tool.AvailableOn(goos) {
+		msg := "Windows only — FRC Driver Station does not run on this computer."
+		if tool.ID != "ni-game-tools" {
+			msg = "This tool is Windows-only. Skipping on " + goos + "."
+		}
+		r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseSkip, Message: msg})
+		return ToolResult{Tool: tool, Status: StatusSkipped, Message: "windows-only"}
+	}
+	tool = tool.Resolve(goos, goarch)
+	r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseCheck, Message: "Checking whether this is already on the computer…"})
 	if r.AlreadyInstalled(tool) {
 		r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseDone, Message: "Already installed. Next.", Already: true})
 		return ToolResult{Tool: tool, Status: StatusOK, Message: "already installed"}
@@ -101,6 +118,20 @@ func (r *Runner) RunTool(tool manifest.Tool, ack <-chan string) ToolResult {
 		return r.runVendor(tool, ack)
 	case "download":
 		return r.runDownload(tool, ack)
+	case "unavailable":
+		if tool.VendorURL == "" {
+			tool.VendorURL = tool.DocsURL
+		}
+		if tool.VendorURL == "" {
+			msg := "No official installer for this computer. Not inventing a URL."
+			r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseSkip, Message: msg})
+			return ToolResult{Tool: tool, Status: StatusSkipped, Message: "unavailable"}
+		}
+		tool.Kind = "vendor_page"
+		return r.runVendor(tool, ack)
+	case "windows_only":
+		r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseSkip, Message: "Windows only."})
+		return ToolResult{Tool: tool, Status: StatusSkipped, Message: "windows-only"}
 	default:
 		msg := fmt.Sprintf("unknown kind %s", tool.Kind)
 		r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseError, Message: msg, Err: msg})
@@ -177,7 +208,8 @@ func (r *Runner) runDownload(tool manifest.Tool, ack <-chan string) ToolResult {
 		r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseDownload, Message: "Checksum matches the official release. Installing next.", Got: got.Size, Total: got.Size})
 	}
 
-	r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseInstall, Message: "Launching the official installer. Finish its screens, then this wizard continues."})
+	silentMsg := installMessage(tool.Install)
+	r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseInstall, Message: silentMsg})
 	if r.Demo {
 		time.Sleep(200 * time.Millisecond)
 	} else {
@@ -214,6 +246,31 @@ func (r *Runner) runDownload(tool manifest.Tool, ack <-chan string) ToolResult {
 	return ToolResult{Tool: tool, Status: StatusOK, Message: "installed"}
 }
 
+func installMessage(inst *manifest.Install) string {
+	if inst == nil {
+		return "Launching the official installer. Finish its screens, then this wizard continues."
+	}
+	switch inst.Type {
+	case "exe":
+		if len(inst.Args) > 0 {
+			return "Installing with the vendor’s silent flags. Stay on this step until it finishes."
+		}
+		return "Launching the official installer. Finish its screens, then this wizard continues."
+	case "dmg":
+		return "Copying the official app into Applications (unattended). Stay on this step until it finishes."
+	case "appimage":
+		return "Installing the official AppImage into ~/.local/bin (unattended)."
+	case "zip":
+		return "Extracting the official zip (unattended)."
+	case "tarball":
+		return "Extracting the official archive (unattended)."
+	case "wpilib_iso", "wpilib_dmg", "wpilib_tarball":
+		return "Launching the official WPILib installer. Finish its screens, then this wizard continues."
+	default:
+		return "Launching the official installer. Finish its screens, then this wizard continues."
+	}
+}
+
 func (r *Runner) install(tool manifest.Tool, path string) error {
 	kind := ""
 	var args []string
@@ -221,14 +278,7 @@ func (r *Runner) install(tool manifest.Tool, path string) error {
 		kind = tool.Install.Type
 		args = tool.Install.Args
 	}
-	switch kind {
-	case "wpilib_iso":
-		return r.Host.InstallWPILibISO(path)
-	case "exe", "":
-		return r.Host.StartWait(path, args)
-	default:
-		return fmt.Errorf("unknown install type %s", kind)
-	}
+	return r.Host.InstallKind(kind, path, args)
 }
 
 func waitAck(ack <-chan string, defaultAction string) string {
@@ -246,9 +296,13 @@ func waitAck(ack <-chan string, defaultAction string) string {
 	}
 }
 
-func DefaultSelected(c *manifest.Catalog) []string {
+func DefaultSelected(c *manifest.Catalog, goos, goarch string) []string {
 	var ids []string
 	for _, t := range c.Tools {
+		kind := t.EffectiveKind(goos, goarch)
+		if kind == "windows_only" || kind == "unavailable" {
+			continue
+		}
 		if t.SelectedByDefault() {
 			ids = append(ids, t.ID)
 		}

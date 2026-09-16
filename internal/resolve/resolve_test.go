@@ -158,13 +158,47 @@ func TestPrereleaseRejected(t *testing.T) {
 	}
 }
 
+func TestWPILibNotesAllPlatforms(t *testing.T) {
+	body := `
+## Downloads
+
+- [Windows](https://packages.wpilib.workers.dev/installer/v2026.2.1/Win64/WPILib_Windows-2026.2.1.iso) (2.4 GB)
+- [Mac (Arm)](https://packages.wpilib.workers.dev/installer/v2026.2.1/macOSArm/WPILib_macOS-Arm64-2026.2.1.dmg) (2.2 GB)
+- [Mac (Intel)](https://packages.wpilib.workers.dev/installer/v2026.2.1/macOS/WPILib_macOS-Intel-2026.2.1.dmg) (2.3 GB)
+- [Linux (x64)](https://packages.wpilib.workers.dev/installer/v2026.2.1/Linux/WPILib_Linux-2026.2.1.tar.gz) (2.8 GB)
+- [Linux (arm64)](https://packages.wpilib.workers.dev/installer/v2026.2.1/LinuxArm64/WPILib_LinuxArm64-2026.2.1.tar.gz) (2.4 GB)
+
+### SHA256 Hashes
+` + "```\n" + `c36591be0b5d1b753356543e0e672af9d91335fb26b5ffcba31cf05af829c656 Linux/WPILib_Linux-2026.2.1.tar.gz
+b4ded5ba0b6cdcd64f0ba0da3c42220bb42e1bc4d8d373e5b28131185acff824 LinuxArm64/WPILib_LinuxArm64-2026.2.1.tar.gz
+6dd86b714c41127c9ef7683b398dc21423cba7146e6868a97fefbd65a14429cb Win64/WPILib_Windows-2026.2.1.iso
+3f725ff13c08ad61dd51f695e25b019e0e13474639f2db0f27f18f0d366022bb macOS/WPILib_macOS-Intel-2026.2.1.dmg
+98c13566292993d3f32c0e0765430617f56c18d85d608115821442fefffe6dcb macOSArm/WPILib_macOS-Arm64-2026.2.1.dmg
+` + "```\n"
+	rel := &GitHubRelease{TagName: "v2026.2.1", HTMLURL: "https://github.com/wpilibsuite/allwpilib/releases/tag/v2026.2.1", Body: body}
+	pins, err := PinsFromWPILibNotes(rel, time.Date(2026, 9, 16, 0, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pins) != 5 {
+		t.Fatalf("pins %d %+v", len(pins), pins)
+	}
+	if pins["darwin-arm64"].AssetName != "WPILib_macOS-Arm64-2026.2.1.dmg" {
+		t.Fatalf("%+v", pins["darwin-arm64"])
+	}
+	if pins["linux-amd64"].SHA256 != "c36591be0b5d1b753356543e0e672af9d91335fb26b5ffcba31cf05af829c656" {
+		t.Fatalf("%+v", pins["linux-amd64"])
+	}
+}
+
 func TestApplyVendorFallbackClearsPin(t *testing.T) {
 	tool := manifest.Tool{
 		ID: "ni", Kind: "download", DocsURL: "https://docs.example",
 		Pinned: &manifest.Pin{URL: "https://example.com/x", SHA256: strings.Repeat("0", 64)},
+		Pins:   map[string]manifest.Pin{"windows-amd64": {URL: "https://example.com/x", SHA256: strings.Repeat("0", 64)}},
 	}
 	Apply(&tool, Result{VendorFallback: true, Reason: "no public url"})
-	if tool.Kind != "vendor_page" || tool.Pinned != nil {
+	if tool.Kind != "vendor_page" || tool.Pinned != nil || tool.Pins != nil {
 		t.Fatalf("%+v", tool)
 	}
 	if tool.VendorURL != "https://docs.example" {

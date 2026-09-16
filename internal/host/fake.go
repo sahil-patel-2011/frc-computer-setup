@@ -10,6 +10,8 @@ type Fake struct {
 	Started   []string
 	ISO       []string
 	Win       bool
+	OS        string
+	Arch      string
 	FailRun   bool
 	FailStart bool
 }
@@ -58,4 +60,28 @@ func (f *Fake) InstallWPILibISO(isoPath string) error {
 	return nil
 }
 
+func (f *Fake) InstallKind(kind, path string, args []string) error {
+	if kind == "wpilib_iso" {
+		return f.InstallWPILibISO(path)
+	}
+	return f.StartWait(path, args)
+}
+
 func (f *Fake) IsWindows() bool { return f.Win }
+
+func (f *Fake) GOOS() string {
+	if f.Win {
+		return "windows"
+	}
+	if f.OS != "" {
+		return f.OS
+	}
+	return "linux"
+}
+
+func (f *Fake) GOARCH() string {
+	if f.Arch != "" {
+		return f.Arch
+	}
+	return "amd64"
+}

@@ -14,14 +14,19 @@ jobs:
           go-version: "1.22"
       - name: Test
         run: go test ./...
-      - name: Build Windows orchestrator
+      - name: Build orchestrators (no vendor binaries)
         run: |
           mkdir -p dist
           GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w -H windowsgui" -o dist/FRC-Computer-Setup.exe ./cmd/frc-computer-setup
+          GOOS=windows GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="-s -w -H windowsgui" -o dist/FRC-Computer-Setup-arm64.exe ./cmd/frc-computer-setup
+          GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w" -o dist/frc-computer-setup-macos-intel ./cmd/frc-computer-setup
+          GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="-s -w" -o dist/frc-computer-setup-macos-arm64 ./cmd/frc-computer-setup
+          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w" -o dist/frc-computer-setup-linux-amd64 ./cmd/frc-computer-setup
+          GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="-s -w" -o dist/frc-computer-setup-linux-arm64 ./cmd/frc-computer-setup
       - uses: actions/upload-artifact@v4
         with:
-          name: FRC-Computer-Setup-windows
-          path: dist/FRC-Computer-Setup.exe
+          name: FRC-Computer-Setup
+          path: dist/*
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -34,15 +39,27 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "1.22"
-      - name: Build Windows orchestrator
+      - name: Build orchestrators (no vendor binaries)
         run: |
           mkdir -p dist
           GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w -H windowsgui" -o dist/FRC-Computer-Setup.exe ./cmd/frc-computer-setup
+          GOOS=windows GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="-s -w -H windowsgui" -o dist/FRC-Computer-Setup-arm64.exe ./cmd/frc-computer-setup
+          GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w" -o dist/frc-computer-setup-macos-intel ./cmd/frc-computer-setup
+          GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="-s -w" -o dist/frc-computer-setup-macos-arm64 ./cmd/frc-computer-setup
+          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w" -o dist/frc-computer-setup-linux-amd64 ./cmd/frc-computer-setup
+          GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="-s -w" -o dist/frc-computer-setup-linux-arm64 ./cmd/frc-computer-setup
       - name: Publish orchestrator only
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/FRC-Computer-Setup.exe
+          files: |
+            dist/FRC-Computer-Setup.exe
+            dist/FRC-Computer-Setup-arm64.exe
+            dist/frc-computer-setup-macos-intel
+            dist/frc-computer-setup-macos-arm64
+            dist/frc-computer-setup-linux-amd64
+            dist/frc-computer-setup-linux-arm64
           generate_release_notes: true
           body: |
             Orchestrator only. It downloads official vendor installers at runtime.
             Do not attach WPILib/NI/PathPlanner binaries to this release.
+            Driver Station / NI Game Tools is Windows-only.

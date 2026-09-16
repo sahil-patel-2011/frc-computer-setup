@@ -1,22 +1,36 @@
 {
   "schemaVersion": 1,
   "season": 2026,
-  "updatedAt": "2026-09-15T21:49:04Z",
-  "notes": "Pinned from official latest stable releases. Do not invent versions. Refresh with: go run ./cmd/refresh-manifest",
+  "updatedAt": "2026-09-16T00:05:00Z",
+  "notes": "Pinned from official latest stable releases. Per-OS pins only when a public installer exists. Do not invent versions. Refresh with: go run ./cmd/refresh-manifest",
   "tools": [
     {
       "id": "git",
       "name": "Git",
       "summary": "Lets you clone and save robot code.",
-      "why": "Every programming laptop needs Git before you pull the team repo.",
+      "why": "Windows has an official Git for Windows setup. macOS/Linux: official installer page (Git is often already installed).",
       "group": "required",
       "kind": "download",
-      "docsUrl": "https://git-scm.com/install/windows",
+      "platforms": [
+        "windows",
+        "darwin",
+        "linux"
+      ],
+      "docsUrl": "https://git-scm.com/downloads",
+      "vendorUrl": "https://git-scm.com/downloads",
+      "vendorByOS": {
+        "windows": "https://git-scm.com/install/windows",
+        "darwin": "https://git-scm.com/download/mac",
+        "linux": "https://git-scm.com/download/linux"
+      },
       "source": {
         "type": "github_release",
         "owner": "git-for-windows",
         "repo": "git",
-        "asset": "Git-*-64-bit.exe"
+        "assets": {
+          "windows-amd64": "Git-*-64-bit.exe",
+          "windows-arm64": "Git-*-arm64.exe"
+        }
       },
       "pinned": {
         "version": "v2.55.0.windows.5",
@@ -27,16 +41,63 @@
         "releaseUrl": "https://github.com/git-for-windows/git/releases/tag/v2.55.0.windows.5",
         "provenAt": "2026-09-15T21:49:04Z"
       },
+      "pins": {
+        "windows-amd64": {
+          "version": "v2.55.0.windows.5",
+          "url": "https://github.com/git-for-windows/git/releases/download/v2.55.0.windows.5/Git-2.55.0.5-64-bit.exe",
+          "sha256": "d065a4e23c3d9a6b5073d609b5be0830227ec3ca053c083ba385061ddfaf94c6",
+          "size": 65343712,
+          "assetName": "Git-2.55.0.5-64-bit.exe",
+          "releaseUrl": "https://github.com/git-for-windows/git/releases/tag/v2.55.0.windows.5",
+          "provenAt": "2026-09-15T21:49:04Z"
+        },
+        "windows-arm64": {
+          "version": "v2.55.0.windows.5",
+          "url": "https://github.com/git-for-windows/git/releases/download/v2.55.0.windows.5/Git-2.55.0.5-arm64.exe",
+          "sha256": "c955de342b1465bc637f0e71fddf4e28e8d0b829668ec1866ab32a839303e8e3",
+          "size": 63259960,
+          "assetName": "Git-2.55.0.5-arm64.exe",
+          "releaseUrl": "https://github.com/git-for-windows/git/releases/tag/v2.55.0.windows.5",
+          "provenAt": "2026-09-15T21:49:04Z"
+        }
+      },
       "install": {
         "type": "exe",
-        "args": ["/VERYSILENT", "/NORESTART", "/SP-", "/CURRENTUSER"]
+        "args": [
+          "/VERYSILENT",
+          "/NORESTART",
+          "/SP-",
+          "/CURRENTUSER"
+        ]
+      },
+      "installs": {
+        "windows": {
+          "type": "exe",
+          "args": [
+            "/VERYSILENT",
+            "/NORESTART",
+            "/SP-",
+            "/CURRENTUSER"
+          ]
+        }
       },
       "verify": {
-        "commands": [{ "name": "git", "args": ["--version"] }],
+        "commands": [
+          {
+            "name": "git",
+            "args": [
+              "--version"
+            ]
+          }
+        ],
         "paths": [
           "%ProgramFiles%\\Git\\cmd\\git.exe",
           "%ProgramFiles(x86)%\\Git\\cmd\\git.exe",
-          "%LOCALAPPDATA%\\Programs\\Git\\cmd\\git.exe"
+          "%LOCALAPPDATA%\\Programs\\Git\\cmd\\git.exe",
+          "/usr/bin/git",
+          "/usr/local/bin/git",
+          "/opt/homebrew/bin/git",
+          "/opt/local/bin/git"
         ]
       }
     },
@@ -44,9 +105,14 @@
       "id": "wpilib",
       "name": "WPILib",
       "summary": "VS Code, JDK, and the FRC programming tools.",
-      "why": "This is the official Java/C++ (and tools-only) programming install. About 2.4 GB.",
+      "why": "Official installer for this computer (ISO / DMG / tar.gz). About 2.4 GB. Windows ARM is not supported by this WPILib release.",
       "group": "required",
       "kind": "download",
+      "platforms": [
+        "windows",
+        "darwin",
+        "linux"
+      ],
       "docsUrl": "https://docs.wpilib.org/en/stable/docs/zero-to-robot/step-2/wpilib-setup.html",
       "source": {
         "type": "wpilib_github_notes",
@@ -63,27 +129,95 @@
         "releaseUrl": "https://github.com/wpilibsuite/allwpilib/releases/tag/v2026.2.1",
         "provenAt": "2026-09-15T21:49:04Z"
       },
+      "pins": {
+        "windows-amd64": {
+          "version": "v2026.2.1",
+          "url": "https://packages.wpilib.workers.dev/installer/v2026.2.1/Win64/WPILib_Windows-2026.2.1.iso",
+          "sha256": "6dd86b714c41127c9ef7683b398dc21423cba7146e6868a97fefbd65a14429cb",
+          "size": 2514407424,
+          "etag": "\"b301f4fde2abee4b2b423c56666aa85a-480\"",
+          "assetName": "WPILib_Windows-2026.2.1.iso",
+          "releaseUrl": "https://github.com/wpilibsuite/allwpilib/releases/tag/v2026.2.1",
+          "provenAt": "2026-09-15T21:49:04Z"
+        },
+        "darwin-arm64": {
+          "version": "v2026.2.1",
+          "url": "https://packages.wpilib.workers.dev/installer/v2026.2.1/macOSArm/WPILib_macOS-Arm64-2026.2.1.dmg",
+          "sha256": "98c13566292993d3f32c0e0765430617f56c18d85d608115821442fefffe6dcb",
+          "size": 2314172106,
+          "etag": "\"55b6ff436d5c26e7469faa7f13621e1a-442\"",
+          "assetName": "WPILib_macOS-Arm64-2026.2.1.dmg",
+          "releaseUrl": "https://github.com/wpilibsuite/allwpilib/releases/tag/v2026.2.1",
+          "provenAt": "2026-09-15T21:49:04Z"
+        },
+        "darwin-amd64": {
+          "version": "v2026.2.1",
+          "url": "https://packages.wpilib.workers.dev/installer/v2026.2.1/macOS/WPILib_macOS-Intel-2026.2.1.dmg",
+          "sha256": "3f725ff13c08ad61dd51f695e25b019e0e13474639f2db0f27f18f0d366022bb",
+          "size": 2369758922,
+          "etag": "\"6653e89a1bb86e8fb28ade43fa0be28d-452\"",
+          "assetName": "WPILib_macOS-Intel-2026.2.1.dmg",
+          "releaseUrl": "https://github.com/wpilibsuite/allwpilib/releases/tag/v2026.2.1",
+          "provenAt": "2026-09-15T21:49:04Z"
+        },
+        "linux-amd64": {
+          "version": "v2026.2.1",
+          "url": "https://packages.wpilib.workers.dev/installer/v2026.2.1/Linux/WPILib_Linux-2026.2.1.tar.gz",
+          "sha256": "c36591be0b5d1b753356543e0e672af9d91335fb26b5ffcba31cf05af829c656",
+          "size": 2762834239,
+          "etag": "\"0bf8528457112e48277069b6eb8aca66-527\"",
+          "assetName": "WPILib_Linux-2026.2.1.tar.gz",
+          "releaseUrl": "https://github.com/wpilibsuite/allwpilib/releases/tag/v2026.2.1",
+          "provenAt": "2026-09-15T21:49:04Z"
+        },
+        "linux-arm64": {
+          "version": "v2026.2.1",
+          "url": "https://packages.wpilib.workers.dev/installer/v2026.2.1/LinuxArm64/WPILib_LinuxArm64-2026.2.1.tar.gz",
+          "sha256": "b4ded5ba0b6cdcd64f0ba0da3c42220bb42e1bc4d8d373e5b28131185acff824",
+          "size": 2412829323,
+          "etag": "\"866c4353fbb8c2cebbf414ded47a2840-461\"",
+          "assetName": "WPILib_LinuxArm64-2026.2.1.tar.gz",
+          "releaseUrl": "https://github.com/wpilibsuite/allwpilib/releases/tag/v2026.2.1",
+          "provenAt": "2026-09-15T21:49:04Z"
+        }
+      },
       "install": {
         "type": "wpilib_iso"
+      },
+      "installs": {
+        "windows": {
+          "type": "wpilib_iso"
+        },
+        "darwin": {
+          "type": "wpilib_dmg"
+        },
+        "linux": {
+          "type": "wpilib_tarball"
+        }
       },
       "verify": {
         "paths": [
           "%PUBLIC%\\wpilib\\2026",
           "%USERPROFILE%\\wpilib\\2026",
-          "C:\\Users\\Public\\wpilib\\2026"
+          "C:\\Users\\Public\\wpilib\\2026",
+          "$HOME/wpilib/2026"
         ]
       }
     },
     {
       "id": "ni-game-tools",
       "name": "FRC Driver Station / NI Game Tools",
-      "summary": "Driver Station and roboRIO imaging — Windows only.",
-      "why": "NI does not publish a stable public direct-download URL (an NI account is required). We open the official page instead of inventing a version.",
+      "summary": "Driver Station and roboRIO imaging \u2014 Windows only.",
+      "why": "NI does not publish a stable public direct-download URL. Driver Station does not run on macOS or Linux.",
       "group": "required",
       "kind": "vendor_page",
+      "windowsOnly": true,
+      "platforms": [
+        "windows"
+      ],
       "docsUrl": "https://docs.wpilib.org/en/stable/docs/zero-to-robot/step-2/frc-game-tools.html",
       "vendorUrl": "https://www.ni.com/en/support/downloads/drivers/download.frc-game-tools.html",
-      "unprovenReason": "NI Game Tools is behind an NI account and has no proven unauthenticated latest URL.",
+      "unprovenReason": "NI Game Tools is behind an NI account and has no proven unauthenticated latest URL. Windows only.",
       "verify": {
         "paths": [
           "%ProgramFiles(x86)%\\FRC Driver Station\\Driver Station.exe",
@@ -96,15 +230,25 @@
       "id": "pathplanner",
       "name": "PathPlanner",
       "summary": "Draw autonomous paths.",
-      "why": "Official Windows setup from the PathPlanner GitHub releases.",
+      "why": "Official GitHub installers for Windows, macOS, and Linux x64.",
       "group": "recommended",
       "kind": "download",
+      "platforms": [
+        "windows",
+        "darwin",
+        "linux"
+      ],
       "docsUrl": "https://pathplanner.dev",
       "source": {
         "type": "github_release",
         "owner": "mjansen4857",
         "repo": "pathplanner",
-        "asset": "PathPlanner-Windows-*-setup.exe"
+        "assets": {
+          "windows-amd64": "PathPlanner-Windows-*-setup.exe",
+          "darwin-amd64": "PathPlanner-macOS-*.dmg",
+          "darwin-arm64": "PathPlanner-macOS-*.dmg",
+          "linux-amd64": "PathPlanner-Linux-*.zip"
+        }
       },
       "pinned": {
         "version": "v2026.1.2",
@@ -115,13 +259,75 @@
         "releaseUrl": "https://github.com/mjansen4857/pathplanner/releases/tag/v2026.1.2",
         "provenAt": "2026-09-15T21:49:04Z"
       },
+      "pins": {
+        "windows-amd64": {
+          "version": "v2026.1.2",
+          "url": "https://github.com/mjansen4857/pathplanner/releases/download/v2026.1.2/PathPlanner-Windows-v2026.1.2-setup.exe",
+          "sha256": "4887de03edc6e71fdb54d296bfad23f4bd03343bac49d597f8b759c10401fef3",
+          "size": 12432756,
+          "assetName": "PathPlanner-Windows-v2026.1.2-setup.exe",
+          "releaseUrl": "https://github.com/mjansen4857/pathplanner/releases/tag/v2026.1.2",
+          "provenAt": "2026-09-15T21:49:04Z"
+        },
+        "darwin-amd64": {
+          "version": "v2026.1.2",
+          "url": "https://github.com/mjansen4857/pathplanner/releases/download/v2026.1.2/PathPlanner-macOS-v2026.1.2.dmg",
+          "sha256": "2bb90f73e00baff8a4b4608330a45c022ccc39b866e70b25eea638d3e3db201c",
+          "size": 21048272,
+          "assetName": "PathPlanner-macOS-v2026.1.2.dmg",
+          "releaseUrl": "https://github.com/mjansen4857/pathplanner/releases/tag/v2026.1.2",
+          "provenAt": "2026-09-15T21:49:04Z"
+        },
+        "darwin-arm64": {
+          "version": "v2026.1.2",
+          "url": "https://github.com/mjansen4857/pathplanner/releases/download/v2026.1.2/PathPlanner-macOS-v2026.1.2.dmg",
+          "sha256": "2bb90f73e00baff8a4b4608330a45c022ccc39b866e70b25eea638d3e3db201c",
+          "size": 21048272,
+          "assetName": "PathPlanner-macOS-v2026.1.2.dmg",
+          "releaseUrl": "https://github.com/mjansen4857/pathplanner/releases/tag/v2026.1.2",
+          "provenAt": "2026-09-15T21:49:04Z"
+        },
+        "linux-amd64": {
+          "version": "v2026.1.2",
+          "url": "https://github.com/mjansen4857/pathplanner/releases/download/v2026.1.2/PathPlanner-Linux-v2026.1.2.zip",
+          "sha256": "9f41e49d9ba2a3c445c1a32dbc13c49489e3013c74eefced1bd963eb50ad8b55",
+          "size": 21228116,
+          "assetName": "PathPlanner-Linux-v2026.1.2.zip",
+          "releaseUrl": "https://github.com/mjansen4857/pathplanner/releases/tag/v2026.1.2",
+          "provenAt": "2026-09-15T21:49:04Z"
+        }
+      },
       "install": {
-        "type": "exe"
+        "type": "exe",
+        "args": [
+          "/VERYSILENT",
+          "/NORESTART",
+          "/SP-"
+        ]
+      },
+      "installs": {
+        "windows": {
+          "type": "exe",
+          "args": [
+            "/VERYSILENT",
+            "/NORESTART",
+            "/SP-"
+          ]
+        },
+        "darwin": {
+          "type": "dmg"
+        },
+        "linux": {
+          "type": "zip"
+        }
       },
       "verify": {
         "paths": [
           "%LOCALAPPDATA%\\Programs\\PathPlanner\\PathPlanner.exe",
-          "%LOCALAPPDATA%\\PathPlanner\\PathPlanner.exe"
+          "%LOCALAPPDATA%\\PathPlanner\\PathPlanner.exe",
+          "/Applications/PathPlanner.app",
+          "$HOME/Applications/PathPlanner.app",
+          "$HOME/.local/share/frc-computer-setup/PathPlanner-Linux-*"
         ]
       }
     },
@@ -129,15 +335,27 @@
       "id": "advantagescope",
       "name": "AdvantageScope",
       "summary": "Log viewer and field visualization.",
-      "why": "WPILib ships a copy; this installs the latest official Windows build from Mechanical Advantage.",
+      "why": "Official Mechanical Advantage builds for Windows, macOS, and Linux.",
       "group": "recommended",
       "kind": "download",
+      "platforms": [
+        "windows",
+        "darwin",
+        "linux"
+      ],
       "docsUrl": "https://docs.advantagescope.org/overview/installation",
       "source": {
         "type": "github_release",
         "owner": "Mechanical-Advantage",
         "repo": "AdvantageScope",
-        "asset": "advantagescope-win-x64-*.exe"
+        "assets": {
+          "windows-amd64": "advantagescope-win-x64-*.exe",
+          "windows-arm64": "advantagescope-win-arm64-*.exe",
+          "darwin-amd64": "advantagescope-mac-x64-*.dmg",
+          "darwin-arm64": "advantagescope-mac-arm64-*.dmg",
+          "linux-amd64": "advantagescope-linux-x64-*.AppImage",
+          "linux-arm64": "advantagescope-linux-arm64-*.AppImage"
+        }
       },
       "pinned": {
         "version": "v26.0.2",
@@ -148,14 +366,89 @@
         "releaseUrl": "https://github.com/Mechanical-Advantage/AdvantageScope/releases/tag/v26.0.2",
         "provenAt": "2026-09-15T21:49:04Z"
       },
+      "pins": {
+        "windows-amd64": {
+          "version": "v26.0.2",
+          "url": "https://github.com/Mechanical-Advantage/AdvantageScope/releases/download/v26.0.2/advantagescope-win-x64-v26.0.2.exe",
+          "sha256": "de1731620c1c9e2586ebcb20372fdec39a1f98086b4aff5c3a39bda004d1468a",
+          "size": 163196543,
+          "assetName": "advantagescope-win-x64-v26.0.2.exe",
+          "releaseUrl": "https://github.com/Mechanical-Advantage/AdvantageScope/releases/tag/v26.0.2",
+          "provenAt": "2026-09-15T21:49:04Z"
+        },
+        "windows-arm64": {
+          "version": "v26.0.2",
+          "url": "https://github.com/Mechanical-Advantage/AdvantageScope/releases/download/v26.0.2/advantagescope-win-arm64-v26.0.2.exe",
+          "sha256": "7e90912c6998125599b522c107c900cfe0296ec169fedf46d2ce598c125a9e2d",
+          "size": 165505089,
+          "assetName": "advantagescope-win-arm64-v26.0.2.exe",
+          "releaseUrl": "https://github.com/Mechanical-Advantage/AdvantageScope/releases/tag/v26.0.2",
+          "provenAt": "2026-09-15T21:49:04Z"
+        },
+        "darwin-amd64": {
+          "version": "v26.0.2",
+          "url": "https://github.com/Mechanical-Advantage/AdvantageScope/releases/download/v26.0.2/advantagescope-mac-x64-v26.0.2.dmg",
+          "sha256": "959aea32909509477d079741456a9aad50ea547710dc3a4d16aa8a1a02a21612",
+          "size": 216144992,
+          "assetName": "advantagescope-mac-x64-v26.0.2.dmg",
+          "releaseUrl": "https://github.com/Mechanical-Advantage/AdvantageScope/releases/tag/v26.0.2",
+          "provenAt": "2026-09-15T21:49:04Z"
+        },
+        "darwin-arm64": {
+          "version": "v26.0.2",
+          "url": "https://github.com/Mechanical-Advantage/AdvantageScope/releases/download/v26.0.2/advantagescope-mac-arm64-v26.0.2.dmg",
+          "sha256": "01022c3e0f4df3ceb8831d23f9c5d9b36ee27d84a23e57ed1118d4125ea35434",
+          "size": 209677733,
+          "assetName": "advantagescope-mac-arm64-v26.0.2.dmg",
+          "releaseUrl": "https://github.com/Mechanical-Advantage/AdvantageScope/releases/tag/v26.0.2",
+          "provenAt": "2026-09-15T21:49:04Z"
+        },
+        "linux-amd64": {
+          "version": "v26.0.2",
+          "url": "https://github.com/Mechanical-Advantage/AdvantageScope/releases/download/v26.0.2/advantagescope-linux-x64-v26.0.2.AppImage",
+          "sha256": "d5ec30f285f9a241fca97d384887070d36c8a70bd8ee17fdb92c933663ee3396",
+          "size": 175804071,
+          "assetName": "advantagescope-linux-x64-v26.0.2.AppImage",
+          "releaseUrl": "https://github.com/Mechanical-Advantage/AdvantageScope/releases/tag/v26.0.2",
+          "provenAt": "2026-09-15T21:49:04Z"
+        },
+        "linux-arm64": {
+          "version": "v26.0.2",
+          "url": "https://github.com/Mechanical-Advantage/AdvantageScope/releases/download/v26.0.2/advantagescope-linux-arm64-v26.0.2.AppImage",
+          "sha256": "317236de75bd9cf384c6862b729b6e3fc666058ce2bf89d24c38504c47cd359f",
+          "size": 175946353,
+          "assetName": "advantagescope-linux-arm64-v26.0.2.AppImage",
+          "releaseUrl": "https://github.com/Mechanical-Advantage/AdvantageScope/releases/tag/v26.0.2",
+          "provenAt": "2026-09-15T21:49:04Z"
+        }
+      },
       "install": {
-        "type": "exe"
+        "type": "exe",
+        "args": [
+          "/S"
+        ]
+      },
+      "installs": {
+        "windows": {
+          "type": "exe",
+          "args": [
+            "/S"
+          ]
+        },
+        "darwin": {
+          "type": "dmg"
+        },
+        "linux": {
+          "type": "appimage"
+        }
       },
       "verify": {
         "paths": [
           "%LOCALAPPDATA%\\Programs\\AdvantageScope\\AdvantageScope.exe",
           "%LOCALAPPDATA%\\AdvantageScope\\AdvantageScope.exe",
-          "%PUBLIC%\\wpilib\\2026\\tools\\AdvantageScope.bat"
+          "/Applications/AdvantageScope.app",
+          "$HOME/Applications/AdvantageScope.app",
+          "$HOME/.local/bin/advantagescope-linux-*.AppImage"
         ]
       }
     },
@@ -163,15 +456,27 @@
       "id": "choreo",
       "name": "Choreo",
       "summary": "Time-optimal swerve path planner.",
-      "why": "Official Windows setup from SleipnirGroup/Choreo.",
+      "why": "Official SleipnirGroup installers for Windows, macOS, and Linux.",
       "group": "recommended",
       "kind": "download",
+      "platforms": [
+        "windows",
+        "darwin",
+        "linux"
+      ],
       "docsUrl": "https://choreo.autos/installation/",
       "source": {
         "type": "github_release",
         "owner": "SleipnirGroup",
         "repo": "Choreo",
-        "asset": "Choreo-*-Windows-x86_64-setup.exe"
+        "assets": {
+          "windows-amd64": "Choreo-*-Windows-x86_64-setup.exe",
+          "windows-arm64": "Choreo-*-Windows-aarch64-setup.exe",
+          "darwin-amd64": "Choreo-*-macOS-x86_64.dmg",
+          "darwin-arm64": "Choreo-*-macOS-aarch64.dmg",
+          "linux-amd64": "Choreo-*-Linux-x86_64.AppImage",
+          "linux-arm64": "Choreo-*-Linux-aarch64.AppImage"
+        }
       },
       "pinned": {
         "version": "v2026.0.3",
@@ -182,13 +487,89 @@
         "releaseUrl": "https://github.com/SleipnirGroup/Choreo/releases/tag/v2026.0.3",
         "provenAt": "2026-09-15T21:49:04Z"
       },
+      "pins": {
+        "windows-amd64": {
+          "version": "v2026.0.3",
+          "url": "https://github.com/SleipnirGroup/Choreo/releases/download/v2026.0.3/Choreo-v2026.0.3-Windows-x86_64-setup.exe",
+          "sha256": "f4fab6e146623c0780f4157cd8008b6b43111704381a12dba527e3b0bea7fdaa",
+          "size": 6152922,
+          "assetName": "Choreo-v2026.0.3-Windows-x86_64-setup.exe",
+          "releaseUrl": "https://github.com/SleipnirGroup/Choreo/releases/tag/v2026.0.3",
+          "provenAt": "2026-09-15T21:49:04Z"
+        },
+        "windows-arm64": {
+          "version": "v2026.0.3",
+          "url": "https://github.com/SleipnirGroup/Choreo/releases/download/v2026.0.3/Choreo-v2026.0.3-Windows-aarch64-setup.exe",
+          "sha256": "bea6c837f1ad6d9752d2c86b1176a23855e95fd381d176d1b6cb2f2b3d1e79f3",
+          "size": 5421848,
+          "assetName": "Choreo-v2026.0.3-Windows-aarch64-setup.exe",
+          "releaseUrl": "https://github.com/SleipnirGroup/Choreo/releases/tag/v2026.0.3",
+          "provenAt": "2026-09-15T21:49:04Z"
+        },
+        "darwin-amd64": {
+          "version": "v2026.0.3",
+          "url": "https://github.com/SleipnirGroup/Choreo/releases/download/v2026.0.3/Choreo-v2026.0.3-macOS-x86_64.dmg",
+          "sha256": "ab7b3cec24cd7599cc389dca7fbf0b38da068b0ee7dd734bdbb7e47bbeaa4de8",
+          "size": 10066079,
+          "assetName": "Choreo-v2026.0.3-macOS-x86_64.dmg",
+          "releaseUrl": "https://github.com/SleipnirGroup/Choreo/releases/tag/v2026.0.3",
+          "provenAt": "2026-09-15T21:49:04Z"
+        },
+        "darwin-arm64": {
+          "version": "v2026.0.3",
+          "url": "https://github.com/SleipnirGroup/Choreo/releases/download/v2026.0.3/Choreo-v2026.0.3-macOS-aarch64.dmg",
+          "sha256": "e3855d9ec09c3a335ede5d5e6bcdfcaa94165a195ab33c956a2c2043a15d9bcb",
+          "size": 9426851,
+          "assetName": "Choreo-v2026.0.3-macOS-aarch64.dmg",
+          "releaseUrl": "https://github.com/SleipnirGroup/Choreo/releases/tag/v2026.0.3",
+          "provenAt": "2026-09-15T21:49:04Z"
+        },
+        "linux-amd64": {
+          "version": "v2026.0.3",
+          "url": "https://github.com/SleipnirGroup/Choreo/releases/download/v2026.0.3/Choreo-v2026.0.3-Linux-x86_64.AppImage",
+          "sha256": "3968c0fe11e1b2e62c4347d2d3f22020dd8611a92440546f51607d92425d4658",
+          "size": 81983992,
+          "assetName": "Choreo-v2026.0.3-Linux-x86_64.AppImage",
+          "releaseUrl": "https://github.com/SleipnirGroup/Choreo/releases/tag/v2026.0.3",
+          "provenAt": "2026-09-15T21:49:04Z"
+        },
+        "linux-arm64": {
+          "version": "v2026.0.3",
+          "url": "https://github.com/SleipnirGroup/Choreo/releases/download/v2026.0.3/Choreo-v2026.0.3-Linux-aarch64.AppImage",
+          "sha256": "30d0215e489905829cbcd3dc15292587f1027a3d4dd574b3fb6a2b52002c17f2",
+          "size": 80099848,
+          "assetName": "Choreo-v2026.0.3-Linux-aarch64.AppImage",
+          "releaseUrl": "https://github.com/SleipnirGroup/Choreo/releases/tag/v2026.0.3",
+          "provenAt": "2026-09-15T21:49:04Z"
+        }
+      },
       "install": {
-        "type": "exe"
+        "type": "exe",
+        "args": [
+          "/S"
+        ]
+      },
+      "installs": {
+        "windows": {
+          "type": "exe",
+          "args": [
+            "/S"
+          ]
+        },
+        "darwin": {
+          "type": "dmg"
+        },
+        "linux": {
+          "type": "appimage"
+        }
       },
       "verify": {
         "paths": [
           "%LOCALAPPDATA%\\Programs\\Choreo\\Choreo.exe",
-          "%LOCALAPPDATA%\\Choreo\\Choreo.exe"
+          "%LOCALAPPDATA%\\Choreo\\Choreo.exe",
+          "/Applications/Choreo.app",
+          "$HOME/Applications/Choreo.app",
+          "$HOME/.local/bin/Choreo-*-Linux-*.AppImage"
         ]
       }
     },
@@ -196,15 +577,25 @@
       "id": "elastic",
       "name": "Elastic",
       "summary": "Driver dashboard used behind the glass.",
-      "why": "WPILib also bundles Elastic; this installs the latest official Windows setup.",
+      "why": "Official Windows setup, macOS DMG, and Linux zip. Elastic does not publish a Windows/Linux ARM installer.",
       "group": "optional",
       "kind": "download",
+      "platforms": [
+        "windows",
+        "darwin",
+        "linux"
+      ],
       "docsUrl": "https://frc-elastic.gitbook.io/docs/getting-started/installation",
       "source": {
         "type": "github_release",
         "owner": "Gold872",
         "repo": "elastic_dashboard",
-        "asset": "elastic-setup-windows.exe"
+        "assets": {
+          "windows-amd64": "elastic-setup-windows.exe",
+          "darwin-amd64": "elastic-setup-macos.dmg",
+          "darwin-arm64": "elastic-setup-macos.dmg",
+          "linux-amd64": "Elastic-Linux.zip"
+        }
       },
       "pinned": {
         "version": "v2026.1.2",
@@ -215,14 +606,74 @@
         "releaseUrl": "https://github.com/Gold872/elastic_dashboard/releases/tag/v2026.1.2",
         "provenAt": "2026-09-15T21:49:04Z"
       },
+      "pins": {
+        "windows-amd64": {
+          "version": "v2026.1.2",
+          "url": "https://github.com/Gold872/elastic_dashboard/releases/download/v2026.1.2/elastic-setup-windows.exe",
+          "sha256": "78cded62a4202bfc251c7d82bcca5d747bf2e78731595a523dbd6ea329a88567",
+          "size": 32828055,
+          "assetName": "elastic-setup-windows.exe",
+          "releaseUrl": "https://github.com/Gold872/elastic_dashboard/releases/tag/v2026.1.2",
+          "provenAt": "2026-09-15T21:49:04Z"
+        },
+        "darwin-amd64": {
+          "version": "v2026.1.2",
+          "url": "https://github.com/Gold872/elastic_dashboard/releases/download/v2026.1.2/elastic-setup-macos.dmg",
+          "sha256": "1bb8bd1c5469ee057f2fecd212ca958a07e96f9956873b911e083d4aecfd15f9",
+          "size": 41595287,
+          "assetName": "elastic-setup-macos.dmg",
+          "releaseUrl": "https://github.com/Gold872/elastic_dashboard/releases/tag/v2026.1.2",
+          "provenAt": "2026-09-15T21:49:04Z"
+        },
+        "darwin-arm64": {
+          "version": "v2026.1.2",
+          "url": "https://github.com/Gold872/elastic_dashboard/releases/download/v2026.1.2/elastic-setup-macos.dmg",
+          "sha256": "1bb8bd1c5469ee057f2fecd212ca958a07e96f9956873b911e083d4aecfd15f9",
+          "size": 41595287,
+          "assetName": "elastic-setup-macos.dmg",
+          "releaseUrl": "https://github.com/Gold872/elastic_dashboard/releases/tag/v2026.1.2",
+          "provenAt": "2026-09-15T21:49:04Z"
+        },
+        "linux-amd64": {
+          "version": "v2026.1.2",
+          "url": "https://github.com/Gold872/elastic_dashboard/releases/download/v2026.1.2/Elastic-Linux.zip",
+          "sha256": "6103b70fe1788cee4929916f8f8b9987efe3cf469aaf122f47cecfb83f6267c1",
+          "size": 38448865,
+          "assetName": "Elastic-Linux.zip",
+          "releaseUrl": "https://github.com/Gold872/elastic_dashboard/releases/tag/v2026.1.2",
+          "provenAt": "2026-09-15T21:49:04Z"
+        }
+      },
       "install": {
-        "type": "exe"
+        "type": "exe",
+        "args": [
+          "/VERYSILENT",
+          "/NORESTART",
+          "/SP-"
+        ]
+      },
+      "installs": {
+        "windows": {
+          "type": "exe",
+          "args": [
+            "/VERYSILENT",
+            "/NORESTART",
+            "/SP-"
+          ]
+        },
+        "darwin": {
+          "type": "dmg"
+        },
+        "linux": {
+          "type": "zip"
+        }
       },
       "verify": {
         "paths": [
           "%LOCALAPPDATA%\\Programs\\Elastic\\Elastic.exe",
-          "%LOCALAPPDATA%\\Programs\\elastic_dashboard\\elastic_dashboard.exe",
-          "%PUBLIC%\\wpilib\\2026\\tools\\Elastic.bat"
+          "/Applications/Elastic.app",
+          "$HOME/Applications/Elastic.app",
+          "$HOME/.local/share/frc-computer-setup/Elastic-Linux*"
         ]
       }
     },
@@ -230,9 +681,14 @@
       "id": "rev-hardware-client",
       "name": "REV Hardware Client",
       "summary": "Update SPARK MAX/Flex and other REV hardware.",
-      "why": "REV hosts the installer on their site. There is no proven GitHub latest asset, so this is a vendor step.",
+      "why": "REV hosts the installer on their site. No proven GitHub latest asset.",
       "group": "optional",
       "kind": "vendor_page",
+      "platforms": [
+        "windows",
+        "darwin",
+        "linux"
+      ],
       "docsUrl": "https://docs.revrobotics.com/rev-hardware-client-2",
       "vendorUrl": "https://docs.revrobotics.com/rev-hardware-client-2",
       "unprovenReason": "No public GitHub release asset for the latest REV Hardware Client installer."
@@ -241,20 +697,32 @@
       "id": "phoenix-tuner-x",
       "name": "Phoenix Tuner X",
       "summary": "CTRE motor controllers, CANivore, Pigeon.",
-      "why": "Ships from the Microsoft Store / CTRE. No proven standalone latest EXE URL.",
+      "why": "Ships from app stores / CTRE. No proven standalone latest EXE URL.",
       "group": "optional",
       "kind": "vendor_page",
+      "platforms": [
+        "windows",
+        "darwin"
+      ],
       "docsUrl": "https://pro.docs.ctr-electronics.com/en/stable/docs/tuner/index.html",
       "vendorUrl": "https://apps.microsoft.com/detail/9nvv38q8rqc1",
+      "vendorByOS": {
+        "windows": "https://apps.microsoft.com/detail/9nvv38q8rqc1",
+        "darwin": "https://pro.docs.ctr-electronics.com/en/stable/docs/tuner/index.html"
+      },
       "unprovenReason": "Phoenix Tuner X is distributed via app stores and the CTRE offline installer, not a pinned public latest URL."
     },
     {
       "id": "labview",
       "name": "LabVIEW for FRC",
       "summary": "Only if your team programs in LabVIEW.",
-      "why": "Huge NI download behind an account. Skip this on a Java/C++/Python laptop.",
+      "why": "Huge NI download behind an account. Windows. Skip on Java/C++/Python.",
       "group": "optional",
       "kind": "vendor_page",
+      "windowsOnly": true,
+      "platforms": [
+        "windows"
+      ],
       "docsUrl": "https://docs.wpilib.org/en/stable/docs/zero-to-robot/step-2/labview-setup.html",
       "vendorUrl": "https://www.ni.com/en/support/downloads/software-products/download.labview-for-frc.html",
       "unprovenReason": "LabVIEW for FRC requires an NI account and has no proven unauthenticated latest URL."
@@ -262,10 +730,14 @@
     {
       "id": "radio-om5p",
       "name": "FRC Radio Configuration (OM5P only)",
-      "summary": "Old OpenMesh radios only — skip on a 2026 VH-109 laptop.",
-      "why": "2026 robot radios (VH-109) are configured in a browser at http://radio.local/. The OM5P utility is a vendor page because the published file is a 2025 build, not a proven 2026 latest.",
+      "summary": "Old OpenMesh radios only \u2014 skip on a 2026 VH-109 laptop.",
+      "why": "2026 VH-109 radios use http://radio.local/. The OM5P utility is a 2025 vendor page, not a proven 2026 latest.",
       "group": "optional",
       "kind": "vendor_page",
+      "windowsOnly": true,
+      "platforms": [
+        "windows"
+      ],
       "docsUrl": "https://docs.wpilib.org/en/stable/docs/zero-to-robot/step-3/openmesh.html",
       "vendorUrl": "https://docs.wpilib.org/en/stable/docs/zero-to-robot/step-3/openmesh.html",
       "unprovenReason": "Current WPILib docs still point at the 2025 OM5P utility. 2026 VH-109 radios do not use that installer."

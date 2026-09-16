@@ -114,12 +114,85 @@ func (m *mutateHost) StartWait(path string, args []string) error {
 }
 
 func TestDemoDoesNotHitNetwork(t *testing.T) {
-	h := &host.Fake{}
+	h := &host.Fake{Win: true}
 	r := &Runner{Host: h, Demo: true, Emit: func(Event) {}}
 	tool := sampleGit("https://example.invalid/nope.exe", strings.Repeat("b", 64), 99)
 	res := r.RunTool(tool, nil)
 	if res.Status != StatusOK {
 		t.Fatalf("%+v", res)
+	}
+}
+
+func TestSkipWindowsOnly(t *testing.T) {
+	h := &host.Fake{OS: "linux"}
+	tool := manifest.Tool{
+		ID: "ni-game-tools", Name: "NI", Summary: "ds", Why: "w", Group: "required",
+		Kind: "vendor_page", WindowsOnly: true, Platforms: []string{"windows"},
+		VendorURL: "https://www.ni.com/en/support/downloads/drivers/download.frc-game-tools.html",
+	}
+	r := &Runner{Host: h, Emit: func(Event) {}}
+	res := r.RunTool(tool, nil)
+	if res.Status != StatusSkipped {
+		t.Fatalf("%+v", res)
+	}
+	if len(h.Opened) != 0 {
+		t.Fatalf("should not open NI page on linux: %v", h.Opened)
+	}
+}
+
+func TestLinuxGitIsVendorNotInvented(t *testing.T) {
+	c, err := manifest.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	git, ok := c.Tool("git")
+	if !ok {
+		t.Fatal("missing git")
+	}
+	h := &host.Fake{OS: "linux", Arch: "amd64"}
+	ack := make(chan string, 1)
+	ack <- "skip"
+	r := &Runner{Host: h, Catalog: c, Emit: func(Event) {}}
+	res := r.RunTool(git, ack)
+	if res.Status != StatusSkipped {
+		t.Fatalf("%+v", res)
+	}
+	if len(h.Opened) != 1 || !strings.Contains(h.Opened[0], "git-scm.com/download/linux") {
+		t.Fatalf("opened %v", h.Opened)
+	}
+}
+
+func TestDefaultSelectedLinuxOmitsDriverStation(t *testing.T) {
+	c, err := manifest.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids := DefaultSelected(c, "linux", "amd64")
+	for _, id := range ids {
+		if id == "ni-game-tools" || id == "labview" || id == "radio-om5p" {
+			t.Fatalf("windows-only %s selected on linux", id)
+		}
+	}
+	joined := strings.Join(ids, ",")
+	for _, need := range []string{"git", "wpilib", "pathplanner", "advantagescope", "choreo"} {
+		if !strings.Contains(joined, need) {
+			t.Fatalf("missing %s in %v", need, ids)
+		}
+	}
+}
+
+func TestInstallMessageSilent(t *testing.T) {
+	msg := installMessage(&manifest.Install{Type: "exe", Args: []string{"/S"}})
+	if !strings.Contains(msg, "silent") {
+		t.Fatal(msg)
+	}
+	msg = installMessage(&manifest.Install{Type: "wpilib_iso"})
+	if !strings.Contains(msg, "WPILib") {
+		t.Fatal(msg)
+	}
+	msg = installMessage(&manifest.Install{Type: "appimage"})
+	if !strings.Contains(msg, "unattended") {
+		t.Fatal(msg)
 	}
 }
 

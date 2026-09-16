@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/sahil-patel-2011/frc-computer-setup/internal/manifest"
@@ -55,8 +56,16 @@ func main() {
 }
 
 func pinKey(t *manifest.Tool) string {
-	if t.Kind == "vendor_page" || t.Pinned == nil {
+	if t.Kind == "vendor_page" {
 		return t.ID + ":vendor"
 	}
-	return t.ID + ":" + t.Pinned.Version + ":" + t.Pinned.SHA256
+	var b strings.Builder
+	b.WriteString(t.ID)
+	for _, p := range t.AllPins() {
+		b.WriteString(":")
+		b.WriteString(p.AssetName)
+		b.WriteString("=")
+		b.WriteString(p.SHA256)
+	}
+	return b.String()
 }

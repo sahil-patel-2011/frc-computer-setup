@@ -9,18 +9,18 @@
 <body>
   <main class="shell">
     <header class="top">
-      <p class="kicker">New FRC laptop</p>
+      <p class="kicker">New FRC computer</p>
       <h1>Computer setup</h1>
       <p class="lead" id="lead">One walkthrough. Official downloads only. You should not hunt fifty vendor pages.</p>
     </header>
 
     <section id="screen-welcome" class="card">
       <ol class="steps-preview">
-        <li>Pick the tools</li>
+        <li>Pick the tools for <strong>this</strong> computer</li>
         <li>Each one: download → install → we check it</li>
-        <li>If a vendor has no public latest URL, we open their official page</li>
+        <li>Driver Station is Windows-only. We say so on a Mac or Linux box.</li>
       </ol>
-      <p class="hint">Windows only. Driver Station is Windows-only. Stay on this window until it says done.</p>
+      <p class="hint" id="os-hint">Stay on this window until it says done.</p>
       <button class="primary" id="btn-begin" type="button">Start</button>
     </section>
 
@@ -50,8 +50,8 @@
     <section id="screen-done" class="card hidden">
       <h2>That’s the walkthrough</h2>
       <ul id="summary"></ul>
-      <p class="hint">Launch <strong>WPILib VS Code 2026</strong> for robot code — not a random VS Code from the Start menu.</p>
-      <p class="hint">Driver Station is in NI Game Tools. If that step was a vendor page, keep the NI tab until it finishes.</p>
+      <p class="hint">Launch <strong>WPILib VS Code 2026</strong> for robot code — not a random VS Code.</p>
+      <p class="hint">Driver Station is Windows-only (NI Game Tools). On a Mac or Linux computer, drive the robot from a Windows Driver Station machine.</p>
     </section>
   </main>
   <script src="/app.js"></script>

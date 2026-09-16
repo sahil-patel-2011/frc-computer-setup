@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"runtime"
 	"strings"
 
 	"github.com/sahil-patel-2011/frc-computer-setup/internal/download"
@@ -37,12 +36,6 @@ func main() {
 	}
 
 	h := host.NewReal()
-	if !*demo && runtime.GOOS != "windows" {
-		fmt.Fprintln(os.Stderr, "This installer is Windows-only (FRC Driver Station is Windows-only).")
-		fmt.Fprintln(os.Stderr, "Use --demo to preview the walkthrough on this computer.")
-		os.Exit(2)
-	}
-
 	dl := download.New()
 	runner := &engine.Runner{Catalog: catalog, Host: h, DL: dl, Demo: *demo}
 	runner.Emit = func(e engine.Event) {
@@ -63,7 +56,7 @@ func main() {
 	}
 
 	if *cli {
-		ids := engine.DefaultSelected(catalog)
+		ids := engine.DefaultSelected(catalog, h.GOOS(), h.GOARCH())
 		if *toolsFlag != "" {
 			ids = splitCSV(*toolsFlag)
 		}

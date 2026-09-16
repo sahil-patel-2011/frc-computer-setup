@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 )
 
 //go:embed tools.json
@@ -28,26 +27,32 @@ type Catalog struct {
 }
 
 type Tool struct {
-	ID             string   `json:"id"`
-	Name           string   `json:"name"`
-	Summary        string   `json:"summary"`
-	Why            string   `json:"why"`
-	Group          string   `json:"group"`
-	Kind           string   `json:"kind"`
-	DocsURL        string   `json:"docsUrl,omitempty"`
-	VendorURL      string   `json:"vendorUrl,omitempty"`
-	UnprovenReason string   `json:"unprovenReason,omitempty"`
-	Source         *Source  `json:"source,omitempty"`
-	Pinned         *Pin     `json:"pinned,omitempty"`
-	Install        *Install `json:"install,omitempty"`
-	Verify         *Verify  `json:"verify,omitempty"`
+	ID             string             `json:"id"`
+	Name           string             `json:"name"`
+	Summary        string             `json:"summary"`
+	Why            string             `json:"why"`
+	Group          string             `json:"group"`
+	Kind           string             `json:"kind"`
+	Platforms      []string           `json:"platforms,omitempty"`
+	WindowsOnly    bool               `json:"windowsOnly,omitempty"`
+	DocsURL        string             `json:"docsUrl,omitempty"`
+	VendorURL      string             `json:"vendorUrl,omitempty"`
+	VendorByOS     map[string]string  `json:"vendorByOS,omitempty"`
+	UnprovenReason string             `json:"unprovenReason,omitempty"`
+	Source         *Source            `json:"source,omitempty"`
+	Pinned         *Pin               `json:"pinned,omitempty"`
+	Pins           map[string]Pin     `json:"pins,omitempty"`
+	Install        *Install           `json:"install,omitempty"`
+	Installs       map[string]Install `json:"installs,omitempty"`
+	Verify         *Verify            `json:"verify,omitempty"`
 }
 
 type Source struct {
-	Type  string `json:"type"`
-	Owner string `json:"owner,omitempty"`
-	Repo  string `json:"repo,omitempty"`
-	Asset string `json:"asset,omitempty"`
+	Type   string            `json:"type"`
+	Owner  string            `json:"owner,omitempty"`
+	Repo   string            `json:"repo,omitempty"`
+	Asset  string            `json:"asset,omitempty"`
+	Assets map[string]string `json:"assets,omitempty"`
 }
 
 type Pin struct {
@@ -116,17 +121,17 @@ func (c *Catalog) Validate() error {
 		}
 		switch t.Kind {
 		case "download":
-			if t.Pinned == nil || t.Pinned.URL == "" {
+			pins := t.AllPins()
+			if len(pins) == 0 {
 				return fmt.Errorf("tool %s is download but has no pinned url — use vendor_page instead of inventing one", t.ID)
 			}
-			if t.Pinned.SHA256 == "" && t.Pinned.ETag == "" {
-				return fmt.Errorf("tool %s pin has neither sha256 nor etag", t.ID)
-			}
-			if !strings.HasPrefix(t.Pinned.URL, "https://") {
-				return fmt.Errorf("tool %s url must be https", t.ID)
+			for _, p := range pins {
+				if err := validatePin(t.ID, p); err != nil {
+					return err
+				}
 			}
 		case "vendor_page":
-			if t.VendorURL == "" {
+			if t.VendorURL == "" && len(t.VendorByOS) == 0 {
 				return fmt.Errorf("tool %s is vendor_page but missing vendorUrl", t.ID)
 			}
 		default:

@@ -32,6 +32,7 @@ type GitHubAsset struct {
 
 type Result struct {
 	Pin            manifest.Pin
+	Pins           map[string]manifest.Pin
 	VendorFallback bool
 	Reason         string
 }

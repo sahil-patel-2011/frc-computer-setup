@@ -85,31 +85,53 @@ func (s *Server) ListenAndServe() (string, error) {
 }
 
 func (s *Server) catalog(w http.ResponseWriter, r *http.Request) {
+	goos, goarch := "linux", "amd64"
+	if s.Host != nil {
+		goos, goarch = s.Host.GOOS(), s.Host.GOARCH()
+	}
 	type tool struct {
-		ID        string `json:"id"`
-		Name      string `json:"name"`
-		Summary   string `json:"summary"`
-		Why       string `json:"why"`
-		Group     string `json:"group"`
-		Kind      string `json:"kind"`
-		Selected  bool   `json:"selected"`
-		VendorURL string `json:"vendorUrl,omitempty"`
-		Version   string `json:"version,omitempty"`
-		Size      int64  `json:"size,omitempty"`
+		ID          string `json:"id"`
+		Name        string `json:"name"`
+		Summary     string `json:"summary"`
+		Why         string `json:"why"`
+		Group       string `json:"group"`
+		Kind        string `json:"kind"`
+		Selected    bool   `json:"selected"`
+		Available   bool   `json:"available"`
+		WindowsOnly bool   `json:"windowsOnly,omitempty"`
+		VendorURL   string `json:"vendorUrl,omitempty"`
+		Version     string `json:"version,omitempty"`
+		Size        int64  `json:"size,omitempty"`
+		Reason      string `json:"reason,omitempty"`
 	}
 	out := struct {
 		Season int    `json:"season"`
 		Demo   bool   `json:"demo"`
+		OS     string `json:"os"`
+		Arch   string `json:"arch"`
 		Tools  []tool `json:"tools"`
-	}{Season: s.Catalog.Season, Demo: s.Demo}
+	}{Season: s.Catalog.Season, Demo: s.Demo, OS: goos, Arch: goarch}
 	for _, t := range s.Catalog.Tools {
+		resolved := t.Resolve(goos, goarch)
+		kind := t.EffectiveKind(goos, goarch)
+		available := kind != "windows_only" && kind != "unavailable"
 		item := tool{
 			ID: t.ID, Name: t.Name, Summary: t.Summary, Why: t.Why,
-			Group: t.Group, Kind: t.Kind, Selected: t.SelectedByDefault(), VendorURL: t.VendorURL,
+			Group: t.Group, Kind: kind, Selected: available && t.SelectedByDefault(),
+			Available: available, WindowsOnly: t.WindowsOnly, VendorURL: resolved.VendorURL,
 		}
-		if t.Pinned != nil {
-			item.Version = t.Pinned.Version
-			item.Size = t.Pinned.Size
+		if !available && t.WindowsOnly {
+			item.Reason = "Windows only — FRC Driver Station does not run here."
+			if t.ID != "ni-game-tools" {
+				item.Reason = "Windows only on this computer."
+			}
+		}
+		if kind == "unavailable" {
+			item.Reason = "No official installer for this OS/arch. Not inventing a URL."
+		}
+		if resolved.Pinned != nil {
+			item.Version = resolved.Pinned.Version
+			item.Size = resolved.Pinned.Size
 		}
 		out.Tools = append(out.Tools, item)
 	}

@@ -35,3 +35,19 @@ try {
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
+
+func installDMG(path string) error {
+	return fmt.Errorf("DMG install is macOS-only")
+}
+
+func installTarball(path string) error {
+	return fmt.Errorf("tarball install is not used on Windows (got %s)", path)
+}
+
+func installZip(path string) error {
+	return fmt.Errorf("zip install is not used on Windows (got %s)", path)
+}
+
+func installAppImage(path string) error {
+	return fmt.Errorf("AppImage install is Linux-only")
+}
