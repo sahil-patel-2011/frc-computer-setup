@@ -1,6 +1,8 @@
 package wizard
 
 import (
+	"bufio"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -39,6 +41,22 @@ func TestCatalogAndStatic(t *testing.T) {
 	}
 	if !strings.Contains(string(body), "Nothing installs unless you check it") {
 		t.Fatal("missing opt-in copy")
+	}
+	if !strings.Contains(string(body), "empty-state") || !strings.Contains(string(body), "Nothing is selected") {
+		t.Fatal("missing empty checklist state")
+	}
+	if !strings.Contains(string(body), "Choose tools") || !strings.Contains(string(body), "run-queue") {
+		t.Fatal("missing installer step chrome")
+	}
+
+	res, err = http.Get(ts.URL + "/styles.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+	css, _ := io.ReadAll(res.Body)
+	res.Body.Close()
+	if res.StatusCode != 200 || !strings.Contains(string(css), "--rail:") {
+		t.Fatalf("styles %d", res.StatusCode)
 	}
 
 	res, err = http.Get(ts.URL + "/api/catalog")
@@ -258,6 +276,80 @@ func TestRunOnlyPostedTools(t *testing.T) {
 	for id := range seen {
 		if id != "git" {
 			t.Fatalf("unchecked tool ran: %s", id)
+		}
+	}
+}
+
+func TestEventsHelloThenOnlyPostedTools(t *testing.T) {
+	c, err := manifest.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := &host.Fake{Win: true}
+	r := &engine.Runner{Catalog: c, Host: h, Demo: true, Emit: func(engine.Event) {}}
+	s := New(c, r, h, true)
+	ts := httptest.NewServer(s.Handler())
+	t.Cleanup(ts.Close)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	t.Cleanup(cancel)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL+"/api/events", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { res.Body.Close() })
+	if res.StatusCode != 200 {
+		t.Fatalf("events %d", res.StatusCode)
+	}
+	reader := bufio.NewReader(res.Body)
+	hello, err := reader.ReadString('\n')
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(hello, "hello") {
+		t.Fatalf("want hello event, got %q", hello)
+	}
+
+	post, err := http.Post(ts.URL+"/api/run", "application/json", strings.NewReader(`{"toolIds":["git"]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	post.Body.Close()
+	if post.StatusCode != 200 {
+		t.Fatalf("run %d", post.StatusCode)
+	}
+
+	seen := map[string]bool{}
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.HasPrefix(line, "data:") {
+			continue
+		}
+		var ev engine.Event
+		if err := json.Unmarshal([]byte(strings.TrimPrefix(line, "data:")), &ev); err != nil {
+			continue
+		}
+		if ev.ToolID != "" {
+			seen[ev.ToolID] = true
+		}
+		if ev.Phase == engine.PhaseDone && ev.ToolID == "" {
+			break
+		}
+	}
+	if !seen["git"] {
+		t.Fatalf("sse missed git after hello, seen %v", seen)
+	}
+	for id := range seen {
+		if id != "git" {
+			t.Fatalf("unchecked tool on sse: %s", id)
 		}
 	}
 }

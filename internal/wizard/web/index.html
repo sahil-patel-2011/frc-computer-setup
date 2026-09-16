@@ -7,41 +7,78 @@
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <main class="shell">
-    <header class="top">
-      <p class="kicker">New FRC computer</p>
-      <h1>Computer setup</h1>
-      <p class="lead" id="lead">Check what you want. Click Install. Windows asks for admin once. This window does the rest.</p>
-    </header>
-
-    <section id="screen-pick" class="card">
-      <h2>What should this computer get?</h2>
-      <p class="hint" id="os-hint">Nothing installs unless you check it. Required / recommended is a label only. After Install: one admin prompt, then silent installs and self-checks — no Next/Next, no extra yes/no.</p>
-      <form id="tool-list"></form>
-      <div class="row">
-        <button class="primary" id="btn-go" type="button" disabled>Install</button>
+  <div class="app" role="application" aria-label="FRC Computer Setup">
+    <aside class="rail" aria-label="Setup steps">
+      <div class="brand">
+        <div class="mark" aria-hidden="true">FRC</div>
+        <div>
+          <p class="product">Computer setup</p>
+          <p class="season" id="season">2026 season</p>
+        </div>
       </div>
-    </section>
+      <ol class="steps" id="steps">
+        <li id="step-pick" class="active"><span>1</span> Choose tools</li>
+        <li id="step-run"><span>2</span> Install</li>
+        <li id="step-done"><span>3</span> Finish</li>
+      </ol>
+      <p class="rail-note">Windows asks for admin once. After that, installs run silently. Nothing installs unless you check it.</p>
+    </aside>
 
-    <section id="screen-run" class="card hidden">
-      <p class="progress-label" id="progress-label">Step 1 of 1</p>
-      <div class="bar"><div class="bar-fill" id="bar-fill"></div></div>
-      <p class="phase" id="phase">Starting</p>
-      <h2 id="tool-name">…</h2>
-      <p class="message" id="message">Hang on.</p>
-      <p class="bytes" id="bytes"></p>
-      <div class="row" id="ack-row">
-        <a class="ghost hidden" id="btn-open" href="#" target="_blank" rel="noreferrer">Open vendor page</a>
-      </div>
-    </section>
+    <main class="stage">
+      <header class="top">
+        <h1 id="title">Choose tools</h1>
+        <p class="lead" id="lead">Check the software this computer needs, then click Install. Required and recommended are labels only.</p>
+      </header>
 
-    <section id="screen-done" class="card hidden">
-      <h2>That’s the walkthrough</h2>
-      <ul id="summary"></ul>
-      <p class="hint">Launch <strong>WPILib VS Code 2026</strong> for robot code unless you chose standalone VS Code.</p>
-      <p class="hint">Driver Station is Windows-only (NI Game Tools). On a Mac or Linux computer, drive the robot from a Windows Driver Station machine.</p>
-    </section>
-  </main>
+      <section id="screen-pick" class="panel" aria-labelledby="title">
+        <p class="machine" id="os-hint">Checking this computer…</p>
+        <div id="catalog-error" class="error-box hidden" role="alert"></div>
+        <form id="tool-list" class="tool-list"></form>
+        <div id="empty-state" class="empty-state">
+          <p class="empty-title">Nothing is selected</p>
+          <p>Check at least one tool to continue. Unchecked tools are skipped.</p>
+        </div>
+        <footer class="actions">
+          <p class="selected" id="selected-count">0 selected</p>
+          <button class="primary" id="btn-go" type="button" disabled>Install</button>
+        </footer>
+      </section>
+
+      <section id="screen-run" class="panel hidden" aria-live="polite">
+        <div id="elevate-banner" class="banner hidden" role="status">
+          Windows needs one administrator approval. After you allow it, this window continues silently — no extra yes/no dialogs.
+        </div>
+        <ol id="run-queue" class="queue"></ol>
+        <div class="progress-block">
+          <div class="progress-meta">
+            <p class="progress-label" id="progress-label">Preparing</p>
+            <p class="bytes" id="bytes"></p>
+          </div>
+          <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="bar">
+            <div class="bar-fill" id="bar-fill"></div>
+          </div>
+        </div>
+        <p class="phase" id="phase">Starting</p>
+        <h2 id="tool-name">Preparing</h2>
+        <p class="message" id="message">Starting the install run.</p>
+        <div id="error-box" class="error-box hidden" role="alert"></div>
+        <div class="row" id="ack-row">
+          <a class="ghost hidden" id="btn-open" href="#" target="_blank" rel="noreferrer">Open vendor page</a>
+        </div>
+      </section>
+
+      <section id="screen-done" class="panel hidden">
+        <div id="done-hero" class="done-hero">
+          <p class="done-kicker" id="done-kicker">Finished</p>
+          <ul id="summary"></ul>
+        </div>
+        <div class="notes">
+          <p>Launch <strong>WPILib VS Code 2026</strong> for robot code unless you chose standalone Microsoft VS Code on the checklist.</p>
+          <p>Driver Station is Windows-only (NI Game Tools). On a Mac or Linux computer, drive the robot from a Windows Driver Station machine.</p>
+        </div>
+      </section>
+    </main>
+  </div>
   <script src="/app.js"></script>
 </body>
 </html>
