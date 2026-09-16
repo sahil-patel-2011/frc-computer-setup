@@ -88,6 +88,9 @@ func (t Tool) EffectiveKind(goos, goarch string) string {
 		}
 		return "unavailable"
 	}
+	if t.Kind == "git_clone" {
+		return "git_clone"
+	}
 	if t.PinFor(goos, goarch) != nil {
 		return "download"
 	}

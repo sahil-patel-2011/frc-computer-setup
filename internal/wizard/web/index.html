@@ -16,9 +16,10 @@
 
     <section id="screen-welcome" class="card">
       <ol class="steps-preview">
-        <li>Pick the tools for <strong>this</strong> computer</li>
-        <li>Each one: download → install → we check it</li>
-        <li>Driver Station is Windows-only. We say so on a Mac or Linux box.</li>
+        <li>We check what is already on <strong>this</strong> computer</li>
+        <li>Missing → official latest. Already there → Update or skip</li>
+        <li>VS Code is a yes/no. Default no (WPILib already ships one)</li>
+        <li>Driver Station is Windows-only</li>
       </ol>
       <p class="hint" id="os-hint">Stay on this window until it says done.</p>
       <button class="primary" id="btn-begin" type="button">Start</button>
@@ -26,7 +27,7 @@
 
     <section id="screen-pick" class="card hidden">
       <h2>What to install</h2>
-      <p class="hint">Required and recommended are on. Uncheck anything you don’t need.</p>
+      <p class="hint">Required and recommended are on. <strong>Install VS Code?</strong> is off unless you check it. Uncheck anything you don’t need.</p>
       <form id="tool-list"></form>
       <div class="row">
         <button class="primary" id="btn-go" type="button">Download and install</button>
@@ -50,7 +51,7 @@
     <section id="screen-done" class="card hidden">
       <h2>That’s the walkthrough</h2>
       <ul id="summary"></ul>
-      <p class="hint">Launch <strong>WPILib VS Code 2026</strong> for robot code — not a random VS Code.</p>
+      <p class="hint">Launch <strong>WPILib VS Code 2026</strong> for robot code unless you chose standalone VS Code.</p>
       <p class="hint">Driver Station is Windows-only (NI Game Tools). On a Mac or Linux computer, drive the robot from a Windows Driver Station machine.</p>
     </section>
   </main>

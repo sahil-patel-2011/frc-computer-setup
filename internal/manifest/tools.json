@@ -205,6 +205,137 @@
       }
     },
     {
+      "id": "vscode",
+      "name": "VS Code (Microsoft, optional)",
+      "summary": "Standalone VS Code. WPILib already ships a VS Code \u2014 leave this off unless you want a separate copy.",
+      "why": "One yes/no. Default is no. Official latest stable from Microsoft. Do not double-install if WPILib VS Code is enough.",
+      "group": "optional",
+      "kind": "download",
+      "platforms": [
+        "windows",
+        "darwin",
+        "linux"
+      ],
+      "docsUrl": "https://code.visualstudio.com/Download",
+      "vendorUrl": "https://code.visualstudio.com/Download",
+      "source": {
+        "type": "vscode_latest",
+        "assets": {
+          "windows-amd64": "win32-x64-user",
+          "windows-arm64": "win32-arm64-user",
+          "darwin-amd64": "darwin",
+          "darwin-arm64": "darwin-arm64",
+          "linux-amd64": "linux-x64",
+          "linux-arm64": "linux-arm64"
+        }
+      },
+      "pinned": {
+        "version": "1.137.0",
+        "url": "https://update.code.visualstudio.com/latest/win32-x64-user/stable",
+        "sha256": "9250de3bcb5e415649f681f7dbf36225e68a813d36dafd76f9d3e5e575c8dfab",
+        "size": 235072944,
+        "assetName": "VSCodeUserSetup-x64-1.137.0.exe",
+        "releaseUrl": "https://code.visualstudio.com/Download",
+        "provenAt": "2026-09-16T00:26:00Z"
+      },
+      "pins": {
+        "windows-amd64": {
+          "version": "1.137.0",
+          "url": "https://update.code.visualstudio.com/latest/win32-x64-user/stable",
+          "sha256": "9250de3bcb5e415649f681f7dbf36225e68a813d36dafd76f9d3e5e575c8dfab",
+          "size": 235072944,
+          "assetName": "VSCodeUserSetup-x64-1.137.0.exe",
+          "releaseUrl": "https://code.visualstudio.com/Download",
+          "provenAt": "2026-09-16T00:26:00Z"
+        },
+        "windows-arm64": {
+          "version": "1.137.0",
+          "url": "https://update.code.visualstudio.com/latest/win32-arm64-user/stable",
+          "sha256": "1de48031dedcb02e0c61008929198bafdd0ef9ba3128737a1e85bcfe86d59cb5",
+          "size": 224432432,
+          "assetName": "VSCodeUserSetup-arm64-1.137.0.exe",
+          "releaseUrl": "https://code.visualstudio.com/Download",
+          "provenAt": "2026-09-16T00:26:00Z"
+        },
+        "darwin-amd64": {
+          "version": "1.137.0",
+          "url": "https://update.code.visualstudio.com/latest/darwin/stable",
+          "sha256": "ac99e0d008a683e87e625ddd0a5c7b6690107de644234747e32f1133fc802e39",
+          "size": 339425365,
+          "assetName": "VSCode-darwin.zip",
+          "releaseUrl": "https://code.visualstudio.com/Download",
+          "provenAt": "2026-09-16T00:26:00Z"
+        },
+        "darwin-arm64": {
+          "version": "1.137.0",
+          "url": "https://update.code.visualstudio.com/latest/darwin-arm64/stable",
+          "sha256": "16ee5cddb1ea19234e1f2516da07d57e07d7cab6ab45a5515dab077656cbc65e",
+          "size": 315573547,
+          "assetName": "VSCode-darwin-arm64.zip",
+          "releaseUrl": "https://code.visualstudio.com/Download",
+          "provenAt": "2026-09-16T00:26:00Z"
+        },
+        "linux-amd64": {
+          "version": "1.137.0",
+          "url": "https://update.code.visualstudio.com/latest/linux-x64/stable",
+          "sha256": "8871d637292568e34c2d27daa5320a3b3c805f41f94014dfceafbe6134187fce",
+          "size": 342993887,
+          "assetName": "code-stable-x64-1788901890.tar.gz",
+          "releaseUrl": "https://code.visualstudio.com/Download",
+          "provenAt": "2026-09-16T00:26:00Z"
+        },
+        "linux-arm64": {
+          "version": "1.137.0",
+          "url": "https://update.code.visualstudio.com/latest/linux-arm64/stable",
+          "sha256": "e6ae2a88078fadc78011c4bdda70c59660b5fe242b4aab341285560779c52313",
+          "size": 332457029,
+          "assetName": "code-stable-arm64-1788901921.tar.gz",
+          "releaseUrl": "https://code.visualstudio.com/Download",
+          "provenAt": "2026-09-16T00:26:00Z"
+        }
+      },
+      "install": {
+        "type": "exe",
+        "args": [
+          "/VERYSILENT",
+          "/NORESTART",
+          "/MERGETASKS=!runcode"
+        ]
+      },
+      "installs": {
+        "windows": {
+          "type": "exe",
+          "args": [
+            "/VERYSILENT",
+            "/NORESTART",
+            "/MERGETASKS=!runcode"
+          ]
+        },
+        "darwin": {
+          "type": "zip"
+        },
+        "linux": {
+          "type": "tarball"
+        }
+      },
+      "verify": {
+        "commands": [
+          {
+            "name": "code",
+            "args": [
+              "--version"
+            ]
+          }
+        ],
+        "paths": [
+          "%LOCALAPPDATA%\\Programs\\Microsoft VS Code\\Code.exe",
+          "%ProgramFiles%\\Microsoft VS Code\\Code.exe",
+          "/Applications/Visual Studio Code.app",
+          "$HOME/Applications/Visual Studio Code.app"
+        ]
+      }
+    },
+    {
       "id": "ni-game-tools",
       "name": "FRC Driver Station / NI Game Tools",
       "summary": "Driver Station and roboRIO imaging \u2014 Windows only.",
@@ -577,8 +708,8 @@
       "id": "elastic",
       "name": "Elastic",
       "summary": "Driver dashboard used behind the glass.",
-      "why": "Official Windows setup, macOS DMG, and Linux zip. Elastic does not publish a Windows/Linux ARM installer.",
-      "group": "optional",
+      "why": "Team 6925 stack. Official Windows setup, macOS DMG, and Linux zip.",
+      "group": "recommended",
       "kind": "download",
       "platforms": [
         "windows",
@@ -694,11 +825,158 @@
       "unprovenReason": "No public GitHub release asset for the latest REV Hardware Client installer."
     },
     {
+      "id": "limelight",
+      "name": "Limelight Hardware Manager",
+      "summary": "Find and flash Limelight cameras (team 6925 vision).",
+      "why": "Official Limelight downloads page, version 2.0.10 proven by HEAD + ETag + size. PhotonVision is not in 6925 robot code, so it is not installed.",
+      "group": "recommended",
+      "kind": "download",
+      "platforms": [
+        "windows",
+        "darwin",
+        "linux"
+      ],
+      "docsUrl": "https://docs.limelightvision.io/docs/resources/downloads",
+      "vendorUrl": "https://docs.limelightvision.io/docs/resources/downloads",
+      "pinned": {
+        "version": "2.0.10",
+        "url": "https://downloads.limelightvision.io/software/LimelightHardwareManagerSetup2_0_10.exe",
+        "etag": "\"31caacd134e0174e2eee527f5192e27d-5\"",
+        "size": 83585968,
+        "assetName": "LimelightHardwareManagerSetup2_0_10.exe",
+        "releaseUrl": "https://docs.limelightvision.io/docs/resources/downloads",
+        "provenAt": "2026-09-16T00:26:00Z"
+      },
+      "pins": {
+        "windows-amd64": {
+          "version": "2.0.10",
+          "url": "https://downloads.limelightvision.io/software/LimelightHardwareManagerSetup2_0_10.exe",
+          "etag": "\"31caacd134e0174e2eee527f5192e27d-5\"",
+          "size": 83585968,
+          "assetName": "LimelightHardwareManagerSetup2_0_10.exe",
+          "releaseUrl": "https://docs.limelightvision.io/docs/resources/downloads",
+          "provenAt": "2026-09-16T00:26:00Z"
+        },
+        "windows-arm64": {
+          "version": "2.0.10",
+          "url": "https://downloads.limelightvision.io/software/LimelightHardwareManagerSetup2_0_10.exe",
+          "etag": "\"31caacd134e0174e2eee527f5192e27d-5\"",
+          "size": 83585968,
+          "assetName": "LimelightHardwareManagerSetup2_0_10.exe",
+          "releaseUrl": "https://docs.limelightvision.io/docs/resources/downloads",
+          "provenAt": "2026-09-16T00:26:00Z"
+        },
+        "darwin-arm64": {
+          "version": "2.0.10",
+          "url": "https://downloads.limelightvision.io/software/LimelightHardwareManager-macOS-AppleSilicon2_0_10.dmg",
+          "etag": "\"cd70b329d4a2f2ad4a9fd1f9c49f4310-6\"",
+          "size": 88940965,
+          "assetName": "LimelightHardwareManager-macOS-AppleSilicon2_0_10.dmg",
+          "releaseUrl": "https://docs.limelightvision.io/docs/resources/downloads",
+          "provenAt": "2026-09-16T00:26:00Z"
+        },
+        "darwin-amd64": {
+          "version": "2.0.10",
+          "url": "https://downloads.limelightvision.io/software/LimelightHardwareManager-macOS-Intel2_0_10.dmg",
+          "etag": "\"67edac49da1ec7241c77d7c8515c8f76-6\"",
+          "size": 91093177,
+          "assetName": "LimelightHardwareManager-macOS-Intel2_0_10.dmg",
+          "releaseUrl": "https://docs.limelightvision.io/docs/resources/downloads",
+          "provenAt": "2026-09-16T00:26:00Z"
+        },
+        "linux-amd64": {
+          "version": "2.0.10",
+          "url": "https://downloads.limelightvision.io/software/LimelightHardwareManager-x86_64_2_0_10.AppImage.zip",
+          "etag": "\"3fb720c8689743a61b3663755afe7e3e-5\"",
+          "size": 77799902,
+          "assetName": "LimelightHardwareManager-x86_64_2_0_10.AppImage.zip",
+          "releaseUrl": "https://docs.limelightvision.io/docs/resources/downloads",
+          "provenAt": "2026-09-16T00:26:00Z"
+        },
+        "linux-arm64": {
+          "version": "2.0.10",
+          "url": "https://downloads.limelightvision.io/software/LimelightHardwareManager-aarch64_2_0_10.AppImage.zip",
+          "etag": "\"0a07ae2f18cdd93fb1753d2b88f4718b-5\"",
+          "size": 75558422,
+          "assetName": "LimelightHardwareManager-aarch64_2_0_10.AppImage.zip",
+          "releaseUrl": "https://docs.limelightvision.io/docs/resources/downloads",
+          "provenAt": "2026-09-16T00:26:00Z"
+        }
+      },
+      "install": {
+        "type": "exe"
+      },
+      "installs": {
+        "windows": {
+          "type": "exe"
+        },
+        "darwin": {
+          "type": "dmg"
+        },
+        "linux": {
+          "type": "zip"
+        }
+      },
+      "verify": {
+        "paths": [
+          "%LOCALAPPDATA%\\Programs\\Limelight Hardware Manager\\Limelight Hardware Manager.exe",
+          "%ProgramFiles%\\Limelight Hardware Manager\\Limelight Hardware Manager.exe",
+          "/Applications/Limelight Hardware Manager.app",
+          "$HOME/Applications/Limelight Hardware Manager.app",
+          "$HOME/.local/share/frc-computer-setup/LimelightHardwareManager*"
+        ]
+      }
+    },
+    {
+      "id": "robot-code-6925",
+      "name": "Clone 6925 robot code",
+      "summary": "Optional public clone after Git works. No secrets in that repo.",
+      "why": "https://github.com/sahil-patel-2011/6925-RobotCodeUpdated — public only.",
+      "group": "optional",
+      "kind": "git_clone",
+      "platforms": [
+        "windows",
+        "darwin",
+        "linux"
+      ],
+      "docsUrl": "https://github.com/sahil-patel-2011/6925-RobotCodeUpdated",
+      "cloneUrl": "https://github.com/sahil-patel-2011/6925-RobotCodeUpdated.git",
+      "cloneDest": "$HOME/Documents/6925-RobotCodeUpdated",
+      "install": {
+        "type": "git_clone",
+        "url": "https://github.com/sahil-patel-2011/6925-RobotCodeUpdated.git",
+        "dest": "$HOME/Documents/6925-RobotCodeUpdated"
+      },
+      "installs": {
+        "windows": {
+          "type": "git_clone",
+          "url": "https://github.com/sahil-patel-2011/6925-RobotCodeUpdated.git",
+          "dest": "%USERPROFILE%\\Documents\\6925-RobotCodeUpdated"
+        },
+        "darwin": {
+          "type": "git_clone",
+          "url": "https://github.com/sahil-patel-2011/6925-RobotCodeUpdated.git",
+          "dest": "$HOME/Documents/6925-RobotCodeUpdated"
+        },
+        "linux": {
+          "type": "git_clone",
+          "url": "https://github.com/sahil-patel-2011/6925-RobotCodeUpdated.git",
+          "dest": "$HOME/Documents/6925-RobotCodeUpdated"
+        }
+      },
+      "verify": {
+        "paths": [
+          "%USERPROFILE%\\Documents\\6925-RobotCodeUpdated\\.git",
+          "$HOME/Documents/6925-RobotCodeUpdated/.git"
+        ]
+      }
+    },
+    {
       "id": "phoenix-tuner-x",
       "name": "Phoenix Tuner X",
       "summary": "CTRE motor controllers, CANivore, Pigeon.",
-      "why": "Ships from app stores / CTRE. No proven standalone latest EXE URL.",
-      "group": "optional",
+      "why": "Team 6925 uses Phoenix 6. App store / CTRE — no proven standalone latest EXE URL.",
+      "group": "recommended",
       "kind": "vendor_page",
       "platforms": [
         "windows",

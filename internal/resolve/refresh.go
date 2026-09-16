@@ -11,6 +11,8 @@ import (
 func (c *Client) RefreshTool(tool manifest.Tool) Result {
 	now := c.Now()
 	switch {
+	case tool.Kind == "git_clone":
+		return Result{Reason: "clone step; no installer pin"}
 	case tool.Kind == "vendor_page":
 		return Result{VendorFallback: true, Reason: tool.UnprovenReason}
 	case tool.Source == nil:
@@ -75,6 +77,27 @@ func (c *Client) RefreshTool(tool manifest.Tool) Result {
 				first = p
 				break
 			}
+		}
+		return Result{Pin: first, Pins: pins}
+	case tool.Source.Type == "vscode_latest":
+		assets := tool.Source.Assets
+		if len(assets) == 0 {
+			return Result{VendorFallback: true, Reason: "no vscode channels; not inventing a download"}
+		}
+		pins := map[string]manifest.Pin{}
+		var first manifest.Pin
+		for key, channel := range assets {
+			pin, err := c.pinVSCodeLatest(channel, now)
+			if err != nil {
+				continue
+			}
+			pins[key] = pin
+			if first.URL == "" || key == "windows-amd64" {
+				first = pin
+			}
+		}
+		if len(pins) == 0 {
+			return Result{VendorFallback: true, Reason: "vscode latest URLs did not prove a checksum"}
 		}
 		return Result{Pin: first, Pins: pins}
 	default:

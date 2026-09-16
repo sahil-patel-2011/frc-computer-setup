@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 )
 
 //go:embed tools.json
@@ -45,6 +46,8 @@ type Tool struct {
 	Install        *Install           `json:"install,omitempty"`
 	Installs       map[string]Install `json:"installs,omitempty"`
 	Verify         *Verify            `json:"verify,omitempty"`
+	CloneURL       string             `json:"cloneUrl,omitempty"`
+	CloneDest      string             `json:"cloneDest,omitempty"`
 }
 
 type Source struct {
@@ -69,6 +72,8 @@ type Pin struct {
 type Install struct {
 	Type string   `json:"type"`
 	Args []string `json:"args,omitempty"`
+	URL  string   `json:"url,omitempty"`
+	Dest string   `json:"dest,omitempty"`
 }
 
 type Verify struct {
@@ -133,6 +138,13 @@ func (c *Catalog) Validate() error {
 		case "vendor_page":
 			if t.VendorURL == "" && len(t.VendorByOS) == 0 {
 				return fmt.Errorf("tool %s is vendor_page but missing vendorUrl", t.ID)
+			}
+		case "git_clone":
+			if t.CloneURL == "" || !strings.HasPrefix(t.CloneURL, "https://") {
+				return fmt.Errorf("tool %s git_clone needs an https cloneUrl — no secrets, public repo only", t.ID)
+			}
+			if t.CloneDest == "" && (t.Install == nil || t.Install.Dest == "") {
+				return fmt.Errorf("tool %s git_clone needs cloneDest", t.ID)
 			}
 		default:
 			return fmt.Errorf("tool %s has unknown kind %q", t.ID, t.Kind)

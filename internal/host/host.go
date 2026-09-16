@@ -115,12 +115,20 @@ func (h *Real) InstallKind(kind, path string, args []string) error {
 		return h.InstallWPILibISO(path)
 	case "dmg", "wpilib_dmg":
 		return installDMG(path)
-	case "tarball", "wpilib_tarball":
+	case "tarball":
 		return installTarball(path)
+	case "wpilib_tarball":
+		return installWPILibTarball(path)
 	case "zip":
 		return installZip(path)
 	case "appimage":
 		return installAppImage(path)
+	case "git_clone":
+		url := ""
+		if len(args) > 0 {
+			url = args[0]
+		}
+		return gitClone(url, path)
 	default:
 		return fmt.Errorf("unknown install type %s", kind)
 	}

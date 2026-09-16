@@ -14,6 +14,7 @@ type Fake struct {
 	Arch      string
 	FailRun   bool
 	FailStart bool
+	RunOut    map[string]string
 }
 
 func (f *Fake) Expand(path string) string {
@@ -39,6 +40,11 @@ func (f *Fake) Run(name string, args ...string) (string, error) {
 	if f.FailRun {
 		return "", os.ErrNotExist
 	}
+	if f.RunOut != nil {
+		if out, ok := f.RunOut[name]; ok {
+			return out, nil
+		}
+	}
 	return "ok", nil
 }
 
@@ -63,6 +69,13 @@ func (f *Fake) InstallWPILibISO(isoPath string) error {
 func (f *Fake) InstallKind(kind, path string, args []string) error {
 	if kind == "wpilib_iso" {
 		return f.InstallWPILibISO(path)
+	}
+	if kind == "git_clone" {
+		f.Started = append(f.Started, "git-clone:"+path)
+		if f.FailStart {
+			return os.ErrPermission
+		}
+		return nil
 	}
 	return f.StartWait(path, args)
 }

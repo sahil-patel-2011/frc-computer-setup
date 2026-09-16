@@ -44,6 +44,10 @@ func installTarball(path string) error {
 	return fmt.Errorf("tarball install is not used on Windows (got %s)", path)
 }
 
+func installWPILibTarball(path string) error {
+	return installTarball(path)
+}
+
 func installZip(path string) error {
 	return fmt.Errorf("zip install is not used on Windows (got %s)", path)
 }

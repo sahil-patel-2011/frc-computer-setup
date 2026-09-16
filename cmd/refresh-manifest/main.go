@@ -22,7 +22,7 @@ func main() {
 	changed := 0
 	for i := range catalog.Tools {
 		tool := &catalog.Tools[i]
-		if tool.Kind == "vendor_page" && tool.Source == nil {
+		if tool.Kind == "git_clone" {
 			continue
 		}
 		if tool.Source == nil {

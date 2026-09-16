@@ -30,7 +30,8 @@ func TestSkipIfAlreadyInstalled(t *testing.T) {
 	if res.Status != StatusOK || res.Message != "already installed" {
 		t.Fatalf("%+v", res)
 	}
-	if phases[len(phases)-1] != PhaseDone {
+	last := phases[len(phases)-1]
+	if last != PhaseDone && last != PhaseSkip {
 		t.Fatalf("%v", phases)
 	}
 }
@@ -174,10 +175,13 @@ func TestDefaultSelectedLinuxOmitsDriverStation(t *testing.T) {
 		}
 	}
 	joined := strings.Join(ids, ",")
-	for _, need := range []string{"git", "wpilib", "pathplanner", "advantagescope", "choreo"} {
+	for _, need := range []string{"git", "wpilib", "pathplanner", "advantagescope", "choreo", "elastic", "limelight"} {
 		if !strings.Contains(joined, need) {
 			t.Fatalf("missing %s in %v", need, ids)
 		}
+	}
+	if strings.Contains(joined, "vscode") {
+		t.Fatal("VS Code must default off")
 	}
 }
 
@@ -196,6 +200,8 @@ func TestInstallMessageSilent(t *testing.T) {
 	}
 }
 
+// TestWPILibISOInstallType is demo-only. This Linux environment cannot mount a
+// real Windows WPILib ISO or run WPILibInstaller.exe.
 func TestWPILibISOInstallType(t *testing.T) {
 	h := &host.Fake{Win: true}
 	r := &Runner{Host: h, Demo: true, Emit: func(Event) {}}

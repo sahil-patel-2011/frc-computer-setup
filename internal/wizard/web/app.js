@@ -57,9 +57,15 @@ function renderTools() {
     label.className = "tool";
     const extra = extraFor(tool);
     const disabled = tool.available ? "" : "disabled";
-    const checked = tool.selected && tool.available ? "checked" : "";
+    let checked = tool.selected && tool.available ? "checked" : "";
+    if (tool.id === "vscode") {
+      checked = "";
+    }
     if (!tool.available) {
       label.classList.add("unavailable");
+    }
+    if (tool.installed) {
+      label.classList.add("installed");
     }
     label.innerHTML = `
       <input type="checkbox" value="${tool.id}" ${checked} ${disabled} />
@@ -80,7 +86,15 @@ function extraFor(tool) {
       return "no installer here";
     case "vendor_page":
       return "vendor page";
+    case "git_clone":
+      return "clone (optional)";
     case "download":
+      if (tool.installed && tool.current) {
+        return "already current";
+      }
+      if (tool.installed) {
+        return "found — will ask update";
+      }
       return tool.version || "";
     default:
       return tool.kind || "";
@@ -115,8 +129,28 @@ function onEvent(e) {
   document.getElementById("bytes").textContent = e.total ? formatBytes(e.got) + " / " + formatBytes(e.total) : "";
 
   const need = !!e.needAck;
-  document.getElementById("btn-continue").classList.toggle("hidden", !need);
-  document.getElementById("btn-skip").classList.toggle("hidden", !need);
+  const cont = document.getElementById("btn-continue");
+  const skip = document.getElementById("btn-skip");
+  cont.classList.toggle("hidden", !need);
+  skip.classList.toggle("hidden", !need);
+  switch (e.ackKind) {
+    case "update":
+      cont.textContent = "Update";
+      skip.textContent = "Keep this version";
+      break;
+    case "vendor":
+      cont.textContent = "I finished this step";
+      skip.textContent = "Skip";
+      break;
+    case "verify":
+      cont.textContent = "Continue";
+      skip.textContent = "Skip";
+      break;
+    default:
+      cont.textContent = "I finished this step";
+      skip.textContent = "Skip";
+      break;
+  }
   const open = document.getElementById("btn-open");
   if (e.url) {
     open.href = e.url;
@@ -131,10 +165,15 @@ function onEvent(e) {
 }
 
 function ack(action) {
+  let send = action;
+  const cont = document.getElementById("btn-continue");
+  if (action === "installed" && cont && cont.textContent === "Update") {
+    send = "update";
+  }
   fetch("/api/ack", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ toolId: state.currentId, action }),
+    body: JSON.stringify({ toolId: state.currentId, action: send }),
   });
   document.getElementById("btn-continue").classList.add("hidden");
   document.getElementById("btn-skip").classList.add("hidden");

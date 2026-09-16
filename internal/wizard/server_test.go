@@ -67,11 +67,17 @@ func TestCatalogAndStatic(t *testing.T) {
 		if tool.ID == "ni-game-tools" && (tool.Kind != "vendor_page" || !tool.Available || !tool.Selected) {
 			t.Fatalf("NI on Windows %+v", tool)
 		}
+		if tool.ID == "vscode" && tool.Selected {
+			t.Fatal("VS Code must default off")
+		}
+		if tool.ID == "vscode" && tool.Kind != "download" {
+			t.Fatalf("vscode %+v", tool)
+		}
 		if tool.ID == "ni-game-tools" && !tool.Selected {
 			t.Fatal("NI selected on Windows")
 		}
 	}
-	for _, id := range []string{"git", "wpilib", "ni-game-tools", "pathplanner", "advantagescope", "choreo"} {
+	for _, id := range []string{"git", "wpilib", "ni-game-tools", "pathplanner", "advantagescope", "choreo", "vscode", "limelight", "robot-code-6925"} {
 		if !found[id] {
 			t.Fatalf("missing %s", id)
 		}

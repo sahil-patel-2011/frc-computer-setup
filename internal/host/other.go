@@ -85,17 +85,13 @@ func copyDir(src, dest string) error {
 }
 
 func installTarball(path string) error {
-	dir := strings.TrimSuffix(path, ".tar.gz")
-	if dir == path {
-		dir = path + ".dir"
-	}
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return err
-	}
-	cmd := exec.Command("tar", "-xf", path, "-C", dir)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
+	_, err := extractTarGz(path)
+	return err
+}
+
+func installWPILibTarball(path string) error {
+	dir, err := extractTarGz(path)
+	if err != nil {
 		return err
 	}
 	setup := filepath.Join(dir, "WPILibInstaller")
@@ -111,6 +107,23 @@ func installTarball(path string) error {
 		return err
 	}
 	return exec.Command(setup).Run()
+}
+
+func extractTarGz(path string) (string, error) {
+	dir := strings.TrimSuffix(path, ".tar.gz")
+	if dir == path {
+		dir = path + ".dir"
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", err
+	}
+	cmd := exec.Command("tar", "-xf", path, "-C", dir)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return "", err
+	}
+	return dir, nil
 }
 
 func installZip(path string) error {

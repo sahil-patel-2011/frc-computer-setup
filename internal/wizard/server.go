@@ -103,6 +103,10 @@ func (s *Server) catalog(w http.ResponseWriter, r *http.Request) {
 		Version     string `json:"version,omitempty"`
 		Size        int64  `json:"size,omitempty"`
 		Reason      string `json:"reason,omitempty"`
+		Installed   bool   `json:"installed,omitempty"`
+		HaveVersion string `json:"haveVersion,omitempty"`
+		Current     bool   `json:"current,omitempty"`
+		Prompt      string `json:"prompt,omitempty"`
 	}
 	out := struct {
 		Season int    `json:"season"`
@@ -115,10 +119,33 @@ func (s *Server) catalog(w http.ResponseWriter, r *http.Request) {
 		resolved := t.Resolve(goos, goarch)
 		kind := t.EffectiveKind(goos, goarch)
 		available := kind != "windows_only" && kind != "unavailable"
+		selected := available && t.SelectedByDefault()
+		if t.ID == "vscode" {
+			selected = false
+		}
 		item := tool{
 			ID: t.ID, Name: t.Name, Summary: t.Summary, Why: t.Why,
-			Group: t.Group, Kind: kind, Selected: available && t.SelectedByDefault(),
+			Group: t.Group, Kind: kind, Selected: selected,
 			Available: available, WindowsOnly: t.WindowsOnly, VendorURL: resolved.VendorURL,
+		}
+		det := engine.DetectTool(s.Host, resolved)
+		item.Installed = det.Installed
+		item.HaveVersion = det.Version
+		item.Current = det.Current
+		if t.ID == "vscode" {
+			item.Prompt = "Install VS Code?"
+			if engine.WPILibVSCodeInstalled(s.Host, s.Catalog.Season) {
+				item.Reason = "WPILib already ships VS Code. Leave this off unless you want a separate Microsoft VS Code."
+			} else {
+				item.Reason = "Install VS Code? Default is no. WPILib’s VS Code is enough for robot code."
+			}
+		}
+		if det.Installed && item.Reason == "" {
+			if det.Current {
+				item.Reason = "Already current on this computer. Uncheck to skip; leave checked only if you want the walkthrough to offer Update."
+			} else {
+				item.Reason = "Already found. The walkthrough will ask Update or skip — it will not reinstall unless you say Update."
+			}
 		}
 		if !available && t.WindowsOnly {
 			item.Reason = "Windows only — FRC Driver Station does not run here."

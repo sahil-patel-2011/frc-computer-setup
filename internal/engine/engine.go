@@ -108,9 +108,39 @@ func (r *Runner) RunTool(tool manifest.Tool, ack <-chan string) ToolResult {
 	}
 	tool = tool.Resolve(goos, goarch)
 	r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseCheck, Message: "Checking whether this is already on the computer…"})
-	if r.AlreadyInstalled(tool) {
-		r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseDone, Message: "Already installed. Next.", Already: true})
-		return ToolResult{Tool: tool, Status: StatusOK, Message: "already installed"}
+	det := DetectTool(r.Host, tool)
+	if tool.Kind == "git_clone" {
+		return r.runClone(tool, det, ack)
+	}
+	if det.Installed {
+		if det.Current {
+			msg := "Already current (" + det.Version + "). Next."
+			if det.Version == "" {
+				msg = "Already current. Next."
+			}
+			r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseDone, Message: msg, Already: true})
+			return ToolResult{Tool: tool, Status: StatusOK, Message: "already installed"}
+		}
+		offer := "Found on this computer."
+		if det.Version != "" && tool.Pinned != nil {
+			offer = "Found " + det.Version + ". Latest official is " + tool.Pinned.Version + ". Update or skip?"
+		} else {
+			offer = "Found. Could not prove it matches the latest official. Update or skip? (Will not reinstall unless you pick Update.)"
+		}
+		r.event(Event{
+			ToolID:  tool.ID,
+			Name:    tool.Name,
+			Phase:   PhaseCheck,
+			Message: offer,
+			NeedAck: true,
+			AckKind: "update",
+			Already: true,
+		})
+		action := waitAck(ack, "skip")
+		if action != "update" && action != "installed" {
+			r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseSkip, Message: "Kept the version already on this computer. Next.", Already: true})
+			return ToolResult{Tool: tool, Status: StatusOK, Message: "already installed"}
+		}
 	}
 
 	switch tool.Kind {
@@ -129,6 +159,8 @@ func (r *Runner) RunTool(tool manifest.Tool, ack <-chan string) ToolResult {
 		}
 		tool.Kind = "vendor_page"
 		return r.runVendor(tool, ack)
+	case "git_clone":
+		return r.runClone(tool, det, ack)
 	case "windows_only":
 		r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseSkip, Message: "Windows only."})
 		return ToolResult{Tool: tool, Status: StatusSkipped, Message: "windows-only"}
@@ -246,6 +278,42 @@ func (r *Runner) runDownload(tool manifest.Tool, ack <-chan string) ToolResult {
 	return ToolResult{Tool: tool, Status: StatusOK, Message: "installed"}
 }
 
+func (r *Runner) runClone(tool manifest.Tool, det Detection, ack <-chan string) ToolResult {
+	url := tool.CloneURL
+	dest := tool.CloneDest
+	if tool.Install != nil {
+		if dest == "" {
+			dest = tool.Install.Dest
+		}
+		if url == "" {
+			url = tool.Install.URL
+		}
+	}
+	if r.Host != nil && dest != "" {
+		dest = r.Host.Expand(dest)
+		if r.Host.Exists(filepath.Join(dest, ".git")) || r.Host.Exists(dest) {
+			r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseDone, Message: "Robot code folder already exists. Next.", Already: true})
+			return ToolResult{Tool: tool, Status: StatusOK, Message: "already installed"}
+		}
+	}
+	if det.Installed {
+		r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseDone, Message: "Robot code folder already exists. Next.", Already: true})
+		return ToolResult{Tool: tool, Status: StatusOK, Message: "already installed"}
+	}
+	r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseInstall, Message: "Cloning the public 6925 robot code (no secrets)."})
+	if r.Demo {
+		r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseDone, Message: "Demo clone skipped. Next."})
+		return ToolResult{Tool: tool, Status: StatusOK, Message: "demo"}
+	}
+	if err := r.Host.InstallKind("git_clone", dest, []string{url}); err != nil {
+		msg := err.Error()
+		r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseError, Message: "Clone failed: " + msg, Err: msg})
+		return ToolResult{Tool: tool, Status: StatusFailed, Message: msg}
+	}
+	r.event(Event{ToolID: tool.ID, Name: tool.Name, Phase: PhaseDone, Message: "Cloned. Next."})
+	return ToolResult{Tool: tool, Status: StatusOK, Message: "installed"}
+}
+
 func installMessage(inst *manifest.Install) string {
 	if inst == nil {
 		return "Launching the official installer. Finish its screens, then this wizard continues."
@@ -264,6 +332,8 @@ func installMessage(inst *manifest.Install) string {
 		return "Extracting the official zip (unattended)."
 	case "tarball":
 		return "Extracting the official archive (unattended)."
+	case "git_clone":
+		return "Cloning the public repository (no secrets)."
 	case "wpilib_iso", "wpilib_dmg", "wpilib_tarball":
 		return "Launching the official WPILib installer. Finish its screens, then this wizard continues."
 	default:
@@ -277,6 +347,20 @@ func (r *Runner) install(tool manifest.Tool, path string) error {
 	if tool.Install != nil {
 		kind = tool.Install.Type
 		args = tool.Install.Args
+		if kind == "git_clone" {
+			url := tool.Install.URL
+			if url == "" {
+				url = tool.CloneURL
+			}
+			dest := tool.Install.Dest
+			if dest == "" {
+				dest = tool.CloneDest
+			}
+			if r.Host != nil {
+				dest = r.Host.Expand(dest)
+			}
+			return r.Host.InstallKind(kind, dest, []string{url})
+		}
 	}
 	return r.Host.InstallKind(kind, path, args)
 }

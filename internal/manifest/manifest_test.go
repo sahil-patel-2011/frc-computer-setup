@@ -26,6 +26,9 @@ func TestParsePinnedCatalog(t *testing.T) {
 			}
 			continue
 		}
+		if tool.Kind == "git_clone" {
+			continue
+		}
 		if tool.Kind != "download" {
 			t.Fatalf("%s want download, got %s", id, tool.Kind)
 		}
